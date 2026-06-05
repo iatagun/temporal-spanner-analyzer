@@ -1,0 +1,234 @@
+import io
+import uuid
+from collections import deque
+
+from fastapi import APIRouter, UploadFile, File, HTTPException
+from fastapi.responses import Response
+
+from backend.models import (
+    SpannerRequest,
+    SpannerResponse,
+    GraphSchema,
+    EdgeSchema,
+    MetricSchema,
+    UploadResponse,
+)
+from backend.services.graph_builder import parse_csv, parse_json
+from backend.services.spanner_service import compute_spanner_pipeline
+
+router = APIRouter()
+
+PMI_THRESHOLD_DEFAULT = 0.0
+
+
+def _shortest_temporal_path_len(
+    start: str, end: str, edges: list[tuple[str, str, float]]
+) -> int | None:
+    adj: dict[str, list[tuple[str, float]]] = {}
+    for u, v, l in edges:
+        if u == v:
+            continue
+        adj.setdefault(u, []).append((v, l))
+        adj.setdefault(v, []).append((u, l))
+    q: deque[tuple[str, float, int]] = deque()
+    q.append((start, -float("inf"), 0))
+    visited: set[tuple[str, float]] = {(start, -float("inf"))}
+    while q:
+        v, last_lbl, dist = q.popleft()
+        if v == end:
+            return dist
+        for w, l in adj.get(v, []):
+            if l >= last_lbl and (w, l) not in visited:
+                visited.add((w, l))
+                q.append((w, l, dist + 1))
+    return None
+
+
+def _compute_stretch_factor(
+    lbl: dict,
+    E_spanner: set[tuple[str, str]],
+    clique_pairs: set[tuple[str, str]],
+) -> float:
+    all_edges = [
+        (a, b, lbl.get((a, b) if a <= b else (b, a), 0.0))
+        for a, b in E_spanner
+    ]
+    orig_edges = [
+        (u, v, lbl[(u, v) if u <= v else (v, u)])
+        for u, v in lbl
+    ]
+
+    pairs = sorted(clique_pairs)
+    if len(pairs) > 50:
+        pairs = pairs[:50]
+
+    total_ratio = 0.0
+    pairs_checked = 0
+
+    for u, v in pairs:
+        d_orig = _shortest_temporal_path_len(u, v, orig_edges)
+        d_spanner = _shortest_temporal_path_len(u, v, all_edges)
+        if d_orig and d_orig > 0:
+            if d_spanner is None:
+                continue
+            total_ratio += d_spanner / d_orig
+            pairs_checked += 1
+
+    return round(total_ratio / max(pairs_checked, 1), 2)
+
+
+@router.post("/spanner")
+def compute_spanner(req: SpannerRequest) -> SpannerResponse:
+    V = set(req.graph.vertices)
+    n = len(V)
+
+    if n < 2:
+        return SpannerResponse(
+            original=req.graph,
+            spanner=GraphSchema(vertices=sorted(V, key=str), edges=[]),
+            metrics=MetricSchema(
+                uploaded_edges=len(req.graph.edges),
+                full_clique_edges=0,
+                spanner_edges=0,
+                bound_7n=0,
+                ratio_per_n=0.0,
+                savings_pct=0.0,
+                verified=True,
+                stretch_factor=1.0,
+            ),
+        )
+
+    lbl, max_label, cliques, all_spanner_edges, clique_qualities, edges_covered, clique_pairs = (
+        compute_spanner_pipeline(req.graph)
+    )
+
+    uploaded_count = len(req.graph.edges)
+    spanner_count = len(all_spanner_edges)
+
+    vertices_in_cliques: set[str] = set()
+    for c in cliques:
+        vertices_in_cliques.update(c)
+    n_covered = len(vertices_in_cliques)
+    bound = 7 * max(n_covered, 1)
+    for v in V:
+        if v not in vertices_in_cliques:
+            bound += 1
+
+    all_verified = (
+        all(cq.verified for cq in clique_qualities) if clique_qualities else True
+    )
+
+    spanner_edges_out = [
+        EdgeSchema(u=a, v=b, label=lbl.get((a, b) if a <= b else (b, a), 0.0))
+        for a, b in all_spanner_edges
+    ]
+
+    savings_base = max(uploaded_count, 1)
+    savings = round((1 - spanner_count / savings_base) * 100, 1)
+
+    stretch = (
+        _compute_stretch_factor(lbl, all_spanner_edges, clique_pairs)
+        if spanner_count > 0 and clique_pairs
+        else 1.0
+    )
+
+    return SpannerResponse(
+        original=req.graph,
+        spanner=GraphSchema(
+            vertices=sorted(V, key=str),
+            edges=spanner_edges_out,
+        ),
+        metrics=MetricSchema(
+            uploaded_edges=uploaded_count,
+            full_clique_edges=len(lbl),
+            spanner_edges=spanner_count,
+            bound_7n=bound,
+            ratio_per_n=round(spanner_count / max(n, 1), 2),
+            savings_pct=savings,
+            verified=all_verified,
+            stretch_factor=stretch,
+            cliques_processed=len(cliques),
+            pmi_threshold=PMI_THRESHOLD_DEFAULT,
+            clique_qualities=clique_qualities,
+        ),
+    )
+
+
+@router.post("/upload", response_model=UploadResponse)
+def upload_csv(file: UploadFile = File(...)):
+    if not file.filename:
+        raise HTTPException(400, "File is required")
+
+    content = file.file.read()
+
+    is_json = file.filename.endswith(".json")
+    is_csv = file.filename.endswith(".csv")
+    if not is_csv and not is_json:
+        raise HTTPException(400, "Only CSV and JSON files are supported")
+
+    try:
+        if is_json:
+            graph, dates, rows_parsed, stopwords_filtered = parse_json(
+                content, pmi_threshold=PMI_THRESHOLD_DEFAULT
+            )
+        else:
+            graph, dates, rows_parsed, stopwords_filtered = parse_csv(
+                content, pmi_threshold=PMI_THRESHOLD_DEFAULT
+            )
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+
+    session_id = str(uuid.uuid4())[:8]
+
+    return UploadResponse(
+        session_id=session_id,
+        graph=graph,
+        rows_parsed=rows_parsed,
+        time_range=[min(dates), max(dates)] if dates else ["", ""],
+        stopwords_filtered=stopwords_filtered,
+    )
+
+
+@router.post("/export")
+def export_graph(req: SpannerRequest, fmt: str = "json"):
+    if fmt == "json":
+        return Response(
+            content=req.graph.model_dump_json(indent=2),
+            media_type="application/json",
+            headers={
+                "Content-Disposition": "attachment; filename=graph.json"
+            },
+        )
+    elif fmt == "csv":
+        buf = io.StringIO()
+        buf.write("source,target,label\n")
+        for e in req.graph.edges:
+            buf.write(f"{e.u},{e.v},{e.label}\n")
+        return Response(
+            content=buf.getvalue(),
+            media_type="text/csv",
+            headers={"Content-Disposition": "attachment; filename=graph.csv"},
+        )
+    elif fmt == "graphml":
+        lines = [
+            '<?xml version="1.0" encoding="UTF-8"?>',
+            '<graphml xmlns="http://graphml.graphdrawing.org/xmlns">',
+            '  <key id="d0" for="edge" attr.name="label" attr.type="double"/>',
+            '  <graph edgedefault="undirected">',
+        ]
+        for v in req.graph.vertices:
+            lines.append(f'    <node id="{v}"/>')
+        for i, e in enumerate(req.graph.edges):
+            lines.append(f'    <edge id="e{i}" source="{e.u}" target="{e.v}">')
+            lines.append(f'      <data key="d0">{e.label}</data>')
+            lines.append("    </edge>")
+        lines.append("  </graph>")
+        lines.append("</graphml>")
+        return Response(
+            content="\n".join(lines),
+            media_type="application/xml",
+            headers={
+                "Content-Disposition": "attachment; filename=graph.graphml"
+            },
+        )
+    raise HTTPException(400, f"Unsupported format: {fmt}")

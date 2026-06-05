@@ -1,0 +1,114 @@
+from backend.models import (
+    GraphSchema,
+    CliqueSnapshot,
+    CliqueTimeline,
+    TrendResponse,
+)
+from backend.services.graph_utils import build_static_adj, maximal_cliques
+
+
+def _jaccard(a: set, b: set) -> float:
+    if not a and not b:
+        return 1.0
+    return len(a & b) / len(a | b)
+
+
+def compute_trends(graph: GraphSchema, windows: int = 10) -> TrendResponse:
+    if not graph.edges:
+        return TrendResponse(timelines=[], time_range=[0, 0], window_edges=[])
+
+    labels = [e.label for e in graph.edges]
+    t_min = min(labels)
+    t_max = max(labels)
+    if t_max == t_min:
+        t_max = t_min + 1.0
+
+    step = (t_max - t_min) / windows
+
+    window_edges: list[int] = []
+    window_cliques: list[list[set[str]]] = []
+
+    for w in range(windows):
+        ws = t_min + w * step
+        we = ws + step if w < windows - 1 else t_max + 0.001
+
+        v_set: set[str] = set()
+        e_list: list[tuple[str, str]] = []
+        for e in graph.edges:
+            if ws <= e.label < we:
+                v_set.add(e.u)
+                v_set.add(e.v)
+                e_list.append((e.u, e.v))
+
+        window_edges.append(len(e_list))
+
+        window_adj: dict[str, set[str]] = {v: set() for v in v_set}
+        for u, v in e_list:
+            window_adj[u].add(v)
+            window_adj[v].add(u)
+
+        cliques = maximal_cliques(window_adj, min_size=2)
+        window_cliques.append(cliques)
+
+    timelines: list[CliqueTimeline] = []
+    next_id = 0
+
+    for w, cliques in enumerate(window_cliques):
+        ws = t_min + w * step
+        we = ws + step if w < windows - 1 else t_max + 0.001
+
+        matched: set[int] = set()
+        for c in cliques:
+            best_tl = None
+            best_score = 0.0
+            for tl in timelines:
+                if tl.death is not None:
+                    continue
+                last_snap = tl.snapshots[-1]
+                score = _jaccard(c, set(last_snap.members))
+                if score > best_score:
+                    best_score = score
+                    best_tl = tl
+
+            if best_tl and best_score >= 0.4:
+                matched.add(timelines.index(best_tl))
+                best_tl.snapshots.append(
+                    CliqueSnapshot(
+                        window=w,
+                        window_start=round(ws, 4),
+                        window_end=round(we, 4),
+                        members=sorted(c),
+                        size=len(c),
+                    )
+                )
+                best_tl.max_size = max(best_tl.max_size, len(c))
+            else:
+                tl = CliqueTimeline(
+                    id=f"c{next_id}",
+                    label=f"Clique {next_id}",
+                    birth=ws,
+                    death=None,
+                    snapshots=[
+                        CliqueSnapshot(
+                            window=w,
+                            window_start=round(ws, 4),
+                            window_end=round(we, 4),
+                            members=sorted(c),
+                            size=len(c),
+                        )
+                    ],
+                    max_size=len(c),
+                )
+                timelines.append(tl)
+                next_id += 1
+
+        if w < windows - 1:
+            for i, tl in enumerate(timelines):
+                if tl.death is None and i not in matched:
+                    tl.death = ws
+
+    return TrendResponse(
+        timelines=timelines,
+        time_range=[round(t_min, 4), round(t_max, 4)],
+        window_edges=window_edges,
+    )
