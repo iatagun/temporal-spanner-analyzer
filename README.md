@@ -66,6 +66,18 @@ tarih,kaynak,kelimeler
 | POST | `/api/check-clique` | Kelime setinin clique kontrolü |
 | GET | `/api/health` | Sağlık kontrolü |
 
+## Ekran Görüntüleri
+
+| Spanner Görünümü | Trend Görünümü |
+|:---:|:---:|
+| ![Spanner](screenshots/spanner-view.png) | ![Trends](screenshots/trends-view.png) |
+| Orijinal ağ (sol) ve seyreltilmiş spanner (sağ) | Clique'lerin zaman içindeki evrimi |
+
+| Karşılaştırma Görünümü | Keşif Görünümü |
+|:---:|:---:|
+| ![Compare](screenshots/compare-view.png) | ![Explore](screenshots/explore-view.png) |
+| İki dönem arası spanner karşılaştırması | Kelime sorgulama ve clique kontrolü |
+
 ## Mimari
 
 - **Backend**: Python 3.13 + FastAPI
@@ -77,3 +89,6 @@ tarih,kaynak,kelimeler
 Her temporal clique (zaman etiketli tam graf), **7n** kenarlı bir spanner'a (seyreltik alt graf) sahiptir.
 Bu spanner, orijinal graftaki herhangi iki düğüm arasında zamansal olarak geçerli bir yol bulunmasını garanti eder.
 Detaylar: `TEMPORAL-SPANNER-PLANI.md`
+
+python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000
+npm run dev
