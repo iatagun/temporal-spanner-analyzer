@@ -1,28 +1,18 @@
 'use client';
 
-import { useCallback, useRef, useEffect, useMemo, useState } from 'react';
+import { useRef, useEffect, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 
 const CytoscapeComponent = dynamic(
   () => import('react-cytoscapejs'),
-  { ssr: false, loading: () => <div style={{ height: 400, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f5f5f5', borderRadius: 8 }}>Loading graph...</div> }
+  { ssr: false, loading: () => <div className="h-[400px] flex items-center justify-center bg-slate-50 rounded-xl">Loading graph...</div> }
 );
-
-const CLIQUE_COLORS = [
-  '#e74c3c', '#2ecc71', '#f39c12', '#3498db', '#9b59b6',
-  '#1abc9c', '#e67e22', '#34495e', '#16a085', '#c0392b',
-  '#27ae60', '#8e44ad', '#d35400', '#2980b9', '#2c3e50',
-];
-
-function nodeColor(v, colorMap) {
-  return colorMap && colorMap[v] ? colorMap[v] : '#4a90d9';
-}
 
 const cyStyles = [
   {
     selector: 'node',
     style: {
-      'background-color': '#4a90d9',
+      'background-color': '#6366f1',
       label: 'data(id)',
       'font-size': '12px',
       'text-valign': 'bottom',
@@ -30,25 +20,25 @@ const cyStyles = [
       width: 30,
       height: 30,
       'border-width': 1,
-      'border-color': '#2c5f8a',
+      'border-color': '#4338ca',
     }
   },
   {
     selector: 'edge',
     style: {
       width: 2,
-      'line-color': '#888',
+      'line-color': '#94a3b8',
       'curve-style': 'bezier',
       label: 'data(label)',
       'font-size': '10px',
       'text-rotation': 'autorotate',
-      color: '#666',
+      color: '#64748b',
     }
   },
   {
     selector: 'edge.highlight',
     style: {
-      'line-color': '#e74c3c',
+      'line-color': '#ef4444',
       width: 3,
     }
   },
@@ -61,7 +51,7 @@ const layout = {
   idealEdgeLength: 100,
 };
 
-export default function GraphViewer({ graph, label, height = 400, colorMap }) {
+export default function GraphViewer({ graph, label, height = 400, colorMap, icon }) {
   const cyRef = useRef(null);
 
   useEffect(() => {
@@ -70,7 +60,7 @@ export default function GraphViewer({ graph, label, height = 400, colorMap }) {
         const c = colorMap[n.id()];
         if (c) {
           n.style('background-color', c);
-          n.style('border-color', '#333');
+          n.style('border-color', '#1e293b');
           n.style('border-width', 2);
         }
       });
@@ -87,13 +77,20 @@ export default function GraphViewer({ graph, label, height = 400, colorMap }) {
   }, [graph]);
 
   if (!graph || !graph.vertices) {
-    return <div style={{ height, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f5f5f5', borderRadius: 8, color: '#999' }}>No graph data</div>;
+    return (
+      <div style={{ height }} className="flex items-center justify-center bg-slate-50 rounded-xl text-text-muted text-sm">
+        No graph data
+      </div>
+    );
   }
 
   return (
     <div>
-      <div style={{ marginBottom: 6, fontWeight: 600, fontSize: 14, color: '#333' }}>{label}</div>
-      <div style={{ height, border: '1px solid #ddd', borderRadius: 8, overflow: 'hidden' }}>
+      <div className="mb-2 flex items-center gap-2">
+        {icon && <span className="text-primary">{icon}</span>}
+        <span className="text-sm font-semibold text-text">{label}</span>
+      </div>
+      <div style={{ height }} className="border border-border rounded-xl overflow-hidden bg-white shadow-sm">
         <CytoscapeComponent
           elements={elements}
           style={{ width: '100%', height: '100%' }}
