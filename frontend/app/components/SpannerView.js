@@ -15,7 +15,7 @@ export default function SpannerView({ result }) {
 
   return (
     <div className="animate-in">
-      <div className="border border-gray-200 bg-gray-50 p-4 mb-5 text-sm text-gray-700 leading-relaxed">
+      <div className="border border-gray-200 rounded-lg bg-gray-50 p-4 mb-5 text-sm text-gray-700">
         <strong>{m.uploaded_edges} baglantidan {m.spanner_edges}'ine indirildi</strong>
         {' '}&mdash; %{m.savings_pct} tasarruf ({getSavingsDescription(m.savings_pct)}).
         Tum zamansal yollar korunuyor.
@@ -24,12 +24,8 @@ export default function SpannerView({ result }) {
       <MetricCards metrics={m} />
 
       <div className="grid md:grid-cols-2 gap-4 mb-8">
-        <GraphViewer graph={result.original}
-          label={`Orijinal (${cliques.length} klik)`}
-          height={450} colorMap={cmap} />
-        <GraphViewer graph={result.spanner}
-          label="Spanner"
-          height={450} />
+        <GraphViewer graph={result.original} label={`Orijinal (${cliques.length} klik)`} height={450} colorMap={cmap} />
+        <GraphViewer graph={result.spanner} label="Spanner" height={450} />
       </div>
     </div>
   );

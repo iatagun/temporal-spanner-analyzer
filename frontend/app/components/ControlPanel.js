@@ -11,8 +11,8 @@ export default function ControlPanel({
   return (
     <div className="mb-6">
       <div
-        className={`border-2 border-dashed rounded p-8 text-center transition-colors ${
-          dragOver ? 'border-gray-400 bg-gray-50' : 'border-border bg-white'
+        className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+          dragOver ? 'border-gray-400 bg-gray-50' : 'border-gray-200 bg-white'
         }`}
         onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
         onDragLeave={() => setDragOver(false)}
@@ -28,7 +28,7 @@ export default function ControlPanel({
         </div>
 
         <div className="flex items-center justify-center gap-3">
-          <label className="inline-block px-4 py-2 bg-gray-900 text-white text-sm rounded cursor-pointer hover:bg-gray-800 transition-colors">
+          <label className="inline-block px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded-md cursor-pointer hover:bg-gray-800 transition-colors">
             Dosya Sec
             <input
               type="file"
@@ -47,14 +47,14 @@ export default function ControlPanel({
           <button
             onClick={onSample}
             disabled={loading}
-            className="px-4 py-2 border border-gray-300 text-sm text-gray-600 rounded hover:bg-gray-50 disabled:opacity-50 transition-colors"
+            className="px-4 py-2 border border-gray-300 text-sm text-gray-600 font-medium rounded-md hover:bg-gray-50 disabled:opacity-50 transition-colors"
           >
             Ornek Veri ile Dene
           </button>
         </div>
 
         <div className="mt-3 text-xs text-gray-400">
-          CoNLL-U (.conllu), VRT (.vrt), CSV, JSON
+          .conllu .vrt .csv .json
         </div>
       </div>
 
@@ -64,7 +64,7 @@ export default function ControlPanel({
           <input
             type="number" min={1} max={20} value={minFreq}
             onChange={e => setMinFreq(Math.max(1, Number(e.target.value)))}
-            className="w-16 px-2 py-1.5 border border-border rounded text-xs text-gray-900"
+            className="w-16 px-2 py-1.5 border border-gray-200 rounded text-xs bg-white"
           />
         </label>
 

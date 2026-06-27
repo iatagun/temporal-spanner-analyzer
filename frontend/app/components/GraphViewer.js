@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic';
 
 const CytoscapeComponent = dynamic(
   () => import('react-cytoscapejs'),
-  { ssr: false, loading: () => <div className="h-[400px] flex items-center justify-center bg-gray-50 border border-gray-200 text-sm text-gray-400">Yukleniyor...</div> }
+  { ssr: false, loading: () => <div className="h-[400px] flex items-center justify-center bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-400">Yukleniyor...</div> }
 );
 
 const cyStyles = [
@@ -71,7 +71,7 @@ export default function GraphViewer({ graph, label, height = 400, colorMap }) {
 
   if (!graph || !graph.vertices) {
     return (
-      <div style={{ height }} className="flex items-center justify-center bg-gray-50 border border-gray-200 text-sm text-gray-400">
+      <div style={{ height }} className="flex items-center justify-center bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-400">
         Veri yok
       </div>
     );
@@ -80,7 +80,7 @@ export default function GraphViewer({ graph, label, height = 400, colorMap }) {
   return (
     <div>
       <div className="mb-1.5 text-xs text-gray-500">{label}</div>
-      <div style={{ height }} className="border border-gray-200 bg-white">
+      <div style={{ height }} className="border border-gray-200 rounded-lg overflow-hidden bg-white">
         <CytoscapeComponent
           elements={elements}
           style={{ width: '100%', height: '100%' }}

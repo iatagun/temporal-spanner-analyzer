@@ -4,7 +4,7 @@ import { useRef, useEffect, useMemo, useState } from 'react';
 import * as d3 from 'd3';
 import { formatTime } from '../lib/utils';
 
-const COLORS = ['#dc2626','#16a34a','#ca8a04','#2563eb','#9333ea','#0891b2','#ea580c','#4f46e5','#0d9488','#db2777','#65a30d','#a855f7','#eab308','#2563eb','#64748b'];
+const COLORS = ['#dc2626','#16a34a','#ca8a04','#2563eb','#9333ea','#0891b2','#ea580c','#4f46e5','#0d9488','#db2777','#65a30d','#a855f7','#eab308','#3b82f6','#64748b'];
 
 export default function TrendsView({ data, height = 300 }) {
   const svgRef = useRef(null);
@@ -29,7 +29,7 @@ export default function TrendsView({ data, height = 300 }) {
     const colorScale = d3.scaleSequential(d3.interpolateBlues).domain([1, maxSize]);
 
     g.append('g').attr('transform', `translate(0,${gHeight})`)
-      .call(d3.axisBottom(xScale).ticks(8).tickFormat(d => formatTime(d))).attr('font-size', '10px');
+      .call(d3.axisBottom(xScale).ticks(8).tickFormat(formatTime)).attr('font-size', '10px');
     g.append('g').call(d3.axisLeft(yScale)).attr('font-size', '10px');
     g.append('text').attr('x', width / 2).attr('y', gHeight + 35)
       .attr('text-anchor', 'middle').attr('font-size', '11px').attr('fill', '#6b7280').text('Zaman');
@@ -38,11 +38,11 @@ export default function TrendsView({ data, height = 300 }) {
       tl.snapshots.forEach(s => {
         const y = yScale(tl.label);
         if (y == null) return;
-        const x1 = xScale(s.window_start), x2 = xScale(s.window_end);
-        g.append('rect').attr('x', x1).attr('y', y).attr('width', Math.max(x2 - x1, 2))
+        g.append('rect').attr('x', xScale(s.window_start)).attr('y', y)
+          .attr('width', Math.max(xScale(s.window_end) - xScale(s.window_start), 2))
           .attr('height', yScale.bandwidth()).attr('fill', colorScale(s.size))
           .attr('stroke', '#1e40af').attr('stroke-width', 0.5).attr('rx', 1)
-          .append('title').text(`${tl.label}\nSize: ${s.size}\nMembers: ${s.members.join(', ')}\n${formatTime(s.window_start)} - ${formatTime(s.window_end)}`);
+          .append('title').text(`${tl.label}\n${s.size} uye\n${s.members.slice(0,5).join(', ')}`);
       });
     });
   }, [timelines, timeRange, height]);
@@ -60,7 +60,7 @@ export default function TrendsView({ data, height = 300 }) {
     const yScale = d3.scaleLinear().domain([0, d3.max(allSizes) || 1]).range([lHeight, 0]);
 
     g.append('g').attr('transform', `translate(0,${lHeight})`)
-      .call(d3.axisBottom(xScale).ticks(6).tickFormat(d => formatTime(d))).attr('font-size', '10px');
+      .call(d3.axisBottom(xScale).ticks(6).tickFormat(formatTime)).attr('font-size', '10px');
     g.append('g').call(d3.axisLeft(yScale).ticks(5)).attr('font-size', '10px');
     g.append('text').attr('x', width / 2).attr('y', lHeight + 35)
       .attr('text-anchor', 'middle').attr('font-size', '11px').attr('fill', '#6b7280').text('Zaman');
@@ -74,7 +74,7 @@ export default function TrendsView({ data, height = 300 }) {
   }, [timelines, timeRange, showLines]);
 
   if (!data || timelines.length === 0) {
-    return <div style={{ height }} className="flex items-center justify-center bg-gray-50 border border-gray-200 text-sm text-gray-400">Trend verisi yok</div>;
+    return <div style={{ height }} className="flex items-center justify-center bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-400">Trend verisi yok</div>;
   }
 
   return (
@@ -88,11 +88,11 @@ export default function TrendsView({ data, height = 300 }) {
           Boyut egrisi
         </label>
       </div>
-      <div className="border border-gray-200 bg-white">
+      <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
         <svg ref={svgRef} width="100%" height={height} className="block" />
       </div>
       {showLines && (
-        <div className="border border-gray-200 bg-white mt-3">
+        <div className="border border-gray-200 rounded-lg overflow-hidden bg-white mt-3">
           <svg ref={lineSvgRef} width="100%" height={200} className="block" />
         </div>
       )}
@@ -100,7 +100,7 @@ export default function TrendsView({ data, height = 300 }) {
         <div className="text-sm font-medium text-gray-900 mb-3">Klik Detaylari</div>
         <div className="flex flex-col gap-1.5">
           {timelines.map((tl, i) => (
-            <div key={tl.id} className="border border-gray-100 p-3 bg-white text-sm"
+            <div key={tl.id} className="border border-gray-200 rounded-lg p-3 bg-white text-sm"
               style={{ borderLeft: `3px solid ${COLORS[i % COLORS.length]}` }}>
               <div className="flex justify-between mb-1.5">
                 <strong>{tl.label}</strong>
@@ -111,7 +111,7 @@ export default function TrendsView({ data, height = 300 }) {
               </div>
               <div className="flex gap-1 flex-wrap">
                 {tl.snapshots.map((s, j) => (
-                  <span key={j} className="px-1.5 py-0.5 bg-gray-100 text-xs text-gray-600"
+                  <span key={j} className="px-1.5 py-0.5 bg-gray-100 rounded text-xs text-gray-600"
                     title={s.members.join(', ')}>
                     w{s.window} ({s.size})
                   </span>

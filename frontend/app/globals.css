@@ -4,7 +4,7 @@
   --color-accent: #2563eb;
   --color-accent-hover: #1d4ed8;
   --color-border: #e5e7eb;
-  --color-bg-alt: #f9fafb;
+  --color-bg-alt: #f8fafc;
   --color-success: #059669;
   --color-warning: #d97706;
   --color-danger: #dc2626;
@@ -13,8 +13,8 @@
 body {
   margin: 0;
   padding: 0;
-  background: #ffffff;
-  color: #111827;
+  background: #fafbfc;
+  color: #1a1a2e;
   -webkit-font-smoothing: antialiased;
 }
 

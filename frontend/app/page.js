@@ -233,7 +233,7 @@ export default function Home() {
 
       {view === 'compare' && compareData && <CompareResult data={compareData} />}
 
-      <footer className="text-xs text-gray-400 text-center mt-12 pt-6 border-t border-border">
+      <footer className="text-xs text-gray-400 text-center mt-12 pt-5 border-t border-gray-100">
         Baligacs (2026) &quot;Temporal Cliques Admit Linear Spanners&quot;
       </footer>
     </div>
