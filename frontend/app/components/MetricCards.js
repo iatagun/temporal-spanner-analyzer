@@ -23,7 +23,7 @@ export default function MetricCards({ metrics }) {
     { label: 'Tasarruf', value: `%${metrics.savings_pct}` },
     { label: 'Dugum Basina', value: metrics.ratio_per_n },
     { label: 'Ust Sinir (7n)', value: metrics.bound_7n },
-    { label: 'Dogrulama', value: metrics.verified ? 'Gecerli' : 'Hata' },
+    { label: 'Dogrulama', value: metrics.verified === true ? 'Gecerli' : metrics.verified === false ? 'Hata' : 'Atlandi' },
     { label: 'Uzatma', value: metrics.stretch_factor != null ? metrics.stretch_factor : '-' },
   ];
 

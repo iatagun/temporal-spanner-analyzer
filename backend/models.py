@@ -21,7 +21,7 @@ class CliqueQualitySchema(BaseModel):
     size: int
     members: List[str]
     spanner_edges: int
-    verified: bool
+    verified: Optional[bool]
 
 
 class MetricSchema(BaseModel):
@@ -31,7 +31,7 @@ class MetricSchema(BaseModel):
     bound_7n: int
     ratio_per_n: float
     savings_pct: float
-    verified: bool
+    verified: Optional[bool]
     stretch_factor: Optional[float] = None
     cliques_processed: int = 0
     pmi_threshold: float = 0.0

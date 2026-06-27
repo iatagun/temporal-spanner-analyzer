@@ -116,9 +116,13 @@ def compute_spanner(req: SpannerRequest) -> SpannerResponse:
         if v not in vertices_in_cliques:
             bound += 1
 
-    all_verified = (
-        all(cq.verified for cq in clique_qualities) if clique_qualities else True
-    )
+    verified_results = [cq.verified for cq in clique_qualities] if clique_qualities else []
+    if not verified_results:
+        all_verified = None
+    elif all(v is None for v in verified_results):
+        all_verified = None
+    else:
+        all_verified = all(v for v in verified_results if v is not None)
 
     spanner_edges_out = [
         EdgeSchema(u=a, v=b, label=lbl.get((a, b) if a <= b else (b, a), 0.0))

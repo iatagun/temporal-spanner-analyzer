@@ -50,7 +50,7 @@ def _process_clique(
     all_spanner_edges.update(E)
     added = len(all_spanner_edges) - before
 
-    verified = False
+    verified = None
     if _VERIFY:
         try:
             verify_spanner(G, E, 7 * len(clique))

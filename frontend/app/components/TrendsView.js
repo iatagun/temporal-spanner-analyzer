@@ -29,7 +29,7 @@ export default function TrendsView({ data, height = 300 }) {
     const colorScale = d3.scaleSequential(d3.interpolateBlues).domain([1, maxSize]);
 
     g.append('g').attr('transform', `translate(0,${gHeight})`)
-      .call(d3.axisBottom(xScale).ticks(8).tickFormat(formatTime)).attr('font-size', '10px');
+      .call(d3.axisBottom(xScale).ticks(8).tickFormat(d => formatTime(d))).attr('font-size', '10px');
     g.append('g').call(d3.axisLeft(yScale)).attr('font-size', '10px');
     g.append('text').attr('x', width / 2).attr('y', gHeight + 35)
       .attr('text-anchor', 'middle').attr('font-size', '11px').attr('fill', '#6b7280').text('Zaman');
@@ -49,27 +49,46 @@ export default function TrendsView({ data, height = 300 }) {
 
   useEffect(() => {
     if (!lineSvgRef.current || timelines.length === 0 || !showLines) return;
+
     const svg = d3.select(lineSvgRef.current);
     svg.selectAll('*').remove();
+
     const margin = { top: 20, right: 20, bottom: 40, left: 50 };
-    const width = lineSvgRef.current.clientWidth - margin.left - margin.right;
+    const w = lineSvgRef.current.clientWidth;
+    if (!w || w < 50) return;
+    const width = w - margin.left - margin.right;
     const lHeight = 200 - margin.top - margin.bottom;
+    if (width <= 0) return;
+
     const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
+
     const xScale = d3.scaleLinear().domain(timeRange).range([0, width]);
     const allSizes = timelines.flatMap(tl => tl.snapshots.map(s => s.size));
-    const yScale = d3.scaleLinear().domain([0, d3.max(allSizes) || 1]).range([lHeight, 0]);
+    const maxSz = d3.max(allSizes) || 1;
+    const yScale = d3.scaleLinear().domain([0, maxSz]).range([lHeight, 0]);
 
     g.append('g').attr('transform', `translate(0,${lHeight})`)
-      .call(d3.axisBottom(xScale).ticks(6).tickFormat(formatTime)).attr('font-size', '10px');
+      .call(d3.axisBottom(xScale).ticks(6).tickFormat(d => formatTime(d))).attr('font-size', '10px');
     g.append('g').call(d3.axisLeft(yScale).ticks(5)).attr('font-size', '10px');
+
     g.append('text').attr('x', width / 2).attr('y', lHeight + 35)
       .attr('text-anchor', 'middle').attr('font-size', '11px').attr('fill', '#6b7280').text('Zaman');
 
     const lineGen = d3.line().x(d => d.x).y(d => d.y).curve(d3.curveMonotoneX);
+
     timelines.forEach((tl, i) => {
-      const pts = tl.snapshots.map(s => ({ x: xScale((s.window_start + s.window_end) / 2), y: yScale(s.size) }));
+      const pts = tl.snapshots.map(s => ({
+        x: xScale((s.window_start + s.window_end) / 2),
+        y: yScale(s.size),
+      }));
+      if (pts.length < 2) return;
       g.append('path').datum(pts).attr('fill', 'none')
         .attr('stroke', COLORS[i % COLORS.length]).attr('stroke-width', 2).attr('d', lineGen);
+      pts.forEach((p, j) => {
+        g.append('circle').attr('cx', p.x).attr('cy', p.y).attr('r', 3)
+          .attr('fill', COLORS[i % COLORS.length])
+          .append('title').text(`${tl.label}: ${tl.snapshots[j].size} members`);
+      });
     });
   }, [timelines, timeRange, showLines]);
 
@@ -113,7 +132,7 @@ export default function TrendsView({ data, height = 300 }) {
                 {tl.snapshots.map((s, j) => (
                   <span key={j} className="px-1.5 py-0.5 bg-gray-100 rounded text-xs text-gray-600"
                     title={s.members.join(', ')}>
-                    w{s.window} ({s.size})
+                    w{s.window} ({s.size}): [{s.members.slice(0, 4).join(', ')}{s.members.length > 4 ? '…' : ''}]
                   </span>
                 ))}
               </div>
