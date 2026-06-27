@@ -3,7 +3,7 @@ services:
     name: temporal-spanner-api
     env: python
     buildCommand: pip install -r backend/requirements.txt
-    startCommand: uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+    startCommand: python -m uvicorn backend.main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: CORS_ORIGINS
         value: https://temporal-spanner.vercel.app,http://localhost:3004,http://127.0.0.1:3004
