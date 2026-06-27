@@ -8,8 +8,8 @@ export function formatTime(t) {
   if (t === undefined || t === null) return '';
   const n = Number(t);
   if (Number.isNaN(n)) return String(t);
-  if (n > 1e10) {
-    const d = new Date(n * 1000);
+  if (n > 1e9) {
+    const d = n > 1e10 ? new Date(n) : new Date(n * 1000);
     return d.toISOString().slice(0, 10);
   }
   return n.toFixed(2);

@@ -4,7 +4,7 @@ import { useState, useCallback } from 'react';
 import { formatTime } from '../lib/utils';
 import { searchWordCliques, checkClique } from '../lib/api';
 
-export default function ExploreView({ fullGraph }) {
+export default function ExploreView({ fullGraph, onSample }) {
   const hasGraph = fullGraph && fullGraph.vertices && fullGraph.vertices.length > 0;
   const [activeView, setActiveView] = useState('word');
 
@@ -36,7 +36,17 @@ export default function ExploreView({ fullGraph }) {
   }, [cliqueWords, fullGraph]);
 
   if (!hasGraph) {
-    return <div className="py-12 text-center text-gray-400 bg-gray-50 border border-gray-200 rounded-lg text-sm">Veri yok. Once bir dosya yukleyin.</div>;
+    return (
+      <div className="py-16 text-center border border-gray-200 rounded-lg">
+        <div className="text-sm text-gray-500 mb-3">Henuz bir veri yuklenmedi</div>
+        {onSample && (
+          <button onClick={onSample}
+            className="px-4 py-2 border border-gray-300 text-sm text-gray-600 rounded-md hover:bg-gray-50 transition-colors">
+            Ornek Veri ile Dene
+          </button>
+        )}
+      </div>
+    );
   }
 
   return (

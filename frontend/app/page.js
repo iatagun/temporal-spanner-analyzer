@@ -227,7 +227,7 @@ export default function Home() {
 
       {view === 'explore' && (
         <div className="mb-8 animate-in">
-          <ExploreView fullGraph={uploadInfo?.graph || currentGraph} />
+          <ExploreView fullGraph={uploadInfo?.graph || currentGraph} onSample={handleSample} />
         </div>
       )}
 
