@@ -38,11 +38,11 @@ export default function ExploreView({ fullGraph, onSample }) {
   if (!hasGraph) {
     return (
       <div className="py-16 text-center border border-gray-200 rounded-lg">
-        <div className="text-sm text-gray-500 mb-3">Henuz bir veri yuklenmedi</div>
+        <div className="text-sm text-gray-500 mb-3">Henüz bir veri yüklenmedi</div>
         {onSample && (
           <button onClick={onSample}
             className="px-4 py-2 border border-gray-300 text-sm text-gray-600 rounded-md hover:bg-gray-50 transition-colors">
-            Ornek Veri ile Dene
+            Örnek Veri ile Dene
           </button>
         )}
       </div>
@@ -69,12 +69,12 @@ export default function ExploreView({ fullGraph, onSample }) {
               <label className="block text-xs text-gray-500 mb-1">Kelime Ara</label>
               <input type="text" value={wordQuery} onChange={e => setWordQuery(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && searchWord()}
-                placeholder="ornek: yapay"
+                placeholder="örnek: yapay"
                 className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm bg-white focus:border-gray-400 outline-none transition-colors" />
             </div>
             <button onClick={searchWord} disabled={wordLoading || !wordQuery.trim()}
               className="px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded-md hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
-              {wordLoading ? 'Araniyor...' : 'Ara'}
+              {wordLoading ? 'Aranıyor...' : 'Ara'}
             </button>
           </div>
           {wordError && <div className="p-3 mb-4 border border-red-200 rounded-md bg-red-50 text-red-700 text-sm animate-in">{wordError}</div>}
@@ -82,7 +82,7 @@ export default function ExploreView({ fullGraph, onSample }) {
             <div>
               <div className="text-sm text-gray-500 mb-4">
                 <strong className="text-gray-900">&ldquo;{wordData.word}&rdquo;</strong>:
-                {wordData.cliques.length} klik, {wordData.total_snapshots} anlik-goruntu
+                {wordData.cliques.length} klik, {wordData.total_snapshots} anlık-görüntü
               </div>
               <div className="flex flex-col gap-3">
                 {wordData.cliques.map((c, i) => (
@@ -116,10 +116,10 @@ export default function ExploreView({ fullGraph, onSample }) {
         <div className="animate-in">
           <div className="flex gap-3 items-end mb-5">
             <div className="flex-1">
-              <label className="block text-xs text-gray-500 mb-1">Kelimeler (virgulle ayirin)</label>
+              <label className="block text-xs text-gray-500 mb-1">Kelimeler (virgülle ayırın)</label>
               <input type="text" value={cliqueWords} onChange={e => setCliqueWords(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && checkCliqueHandler()}
-                placeholder="ornek: yapay, zeka, veri"
+                placeholder="örnek: yapay, zeka, veri"
                 className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm bg-white focus:border-gray-400 outline-none transition-colors" />
             </div>
             <button onClick={checkCliqueHandler} disabled={cliqueLoading || cliqueWords.split(',').filter(Boolean).length < 2}
@@ -131,16 +131,16 @@ export default function ExploreView({ fullGraph, onSample }) {
           {cliqueCheck && (
             <div className={`p-4 rounded-lg border ${cliqueCheck.is_clique ? 'border-gray-200 bg-gray-50' : 'border-amber-200 bg-amber-50'} animate-in`}>
               <div className={`text-sm font-medium mb-1 ${cliqueCheck.is_clique ? 'text-gray-900' : 'text-amber-800'}`}>
-                {cliqueCheck.is_clique ? 'Tam Klik' : 'Tam Klik Degil'}
+                {cliqueCheck.is_clique ? 'Tam Klik' : 'Tam Klik Değil'}
               </div>
               {cliqueCheck.is_clique && (
                 <div className="text-xs text-gray-500">
-                  {cliqueCheck.word_count} kelime, {cliqueCheck.edge_count} baglanti (beklenen: {cliqueCheck.expected_edges})
+                  {cliqueCheck.word_count} kelime, {cliqueCheck.edge_count} bağlantı (beklenen: {cliqueCheck.expected_edges})
                 </div>
               )}
               {!cliqueCheck.is_clique && cliqueCheck.missing_edges && (
                 <div className="text-xs text-amber-700 mt-2">
-                  Eksik baglantilar: {cliqueCheck.missing_edges.map((e, i) => <span key={i}>{e.join(' &mdash; ')}{i < cliqueCheck.missing_edges.length - 1 ? ', ' : ''}</span>)}
+                  Eksik bağlantılar: {cliqueCheck.missing_edges.map((e, i) => <span key={i}>{e.join(' &mdash; ')}{i < cliqueCheck.missing_edges.length - 1 ? ', ' : ''}</span>)}
                 </div>
               )}
             </div>

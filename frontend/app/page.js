@@ -88,7 +88,7 @@ export default function Home() {
   }, []);
 
   const processUpload = async (file) => {
-    if (!file) { setError('Dosya secin'); return; }
+      if (!file) { setError('Dosya seçin'); return; }
     setLoading(true); setError(null);
     try {
       const data = await uploadCSV(file);
@@ -108,7 +108,7 @@ export default function Home() {
       }
       setUploadInfo({
         graph: data.graph,
-        label: `${data.graph.vertices.length} dugum, ${data.graph.edges.length} baglanti`,
+        label: `${data.graph.vertices.length} düğüm, ${data.graph.edges.length} bağlantı`,
       });
       setResult(null);
       doSpanner(data.graph);
@@ -127,7 +127,7 @@ export default function Home() {
     setLoading(true); setError(null);
     try {
       const res = await fetch('/sample.conllu');
-      if (!res.ok) throw new Error('Ornek dosya yuklenemedi');
+      if (!res.ok) throw new Error('Örnek dosya yüklenemedi');
       const text = await res.text();
       const blob = new Blob([text], { type: 'text/plain' });
       const file = new File([blob], 'sample.conllu', { type: 'text/plain' });
@@ -152,8 +152,8 @@ export default function Home() {
   const viewTabs = [
     { key: 'spanner', label: 'Spanner' },
     { key: 'trends', label: 'Trends' },
-    { key: 'compare', label: 'Karsilastir' },
-    { key: 'explore', label: 'Kesfet' },
+    { key: 'compare', label: 'Karşılaştır' },
+    { key: 'explore', label: 'Keşfet' },
   ];
 
   return (

@@ -14,15 +14,15 @@ export default function Header() {
         </h1>
       </div>
       <p className="text-sm text-gray-500 max-w-2xl leading-relaxed ml-11">
-        Derlem dilbiliminde kavramlarin zamansal evrimini analiz eden bir arac.
-        Baligacs (2026) lineer spanner algoritmasiyla kelime birlikteliklerini
-        seyrek zamanli cizgelere indirger; kavram kumelerinin dogum, buyume ve
-        kaybolus sureclerini gorunur kilar.
+        Derlem dilbiliminde kavramların zamansal evrimini analiz eden bir araç.
+        Baligács (2026) lineer spanner algoritmasıyla kelime birlikteliklerini
+        seyrek zamanlı çizgelere indirger; kavram kümelerinin doğum, büyüme ve
+        kayboluş süreçlerini görünür kılar.
       </p>
       <div className="flex gap-3 mt-3 ml-11 text-xs text-gray-400">
         <span>Girdi: CSV, JSON, CoNLL-U, VRT</span>
         <span>&middot;</span>
-        <span>Cikti: Spanner cizgeler, trend grafikleri, karsilastirma, kesif</span>
+        <span>Çıktı: Spanner çizgeler, trend grafikleri, karşılaştırma, keşif</span>
       </div>
     </header>
   );

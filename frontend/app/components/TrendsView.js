@@ -23,7 +23,7 @@ export default function TrendsView({ data, height = 300 }) {
     const width = svgRef.current.clientWidth - margin.left - margin.right;
     const gHeight = height - margin.top - margin.bottom;
     const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
-    const xScale = d3.scaleLinear().domain(timeRange).range([0, width]);
+    const xScale = d3.scaleLinear().domain(timeRange).range([0, Math.max(width, 1)]);
     const yScale = d3.scaleBand().domain(timelines.map(t => t.label)).range([0, gHeight]).padding(0.15);
     const maxSize = d3.max(timelines, t => t.max_size) || 1;
     const colorScale = d3.scaleSequential(d3.interpolateBlues).domain([1, maxSize]);
@@ -31,7 +31,7 @@ export default function TrendsView({ data, height = 300 }) {
     g.append('g').attr('transform', `translate(0,${gHeight})`)
       .call(d3.axisBottom(xScale).ticks(8).tickFormat(d => formatTime(d))).attr('font-size', '10px');
     g.append('g').call(d3.axisLeft(yScale)).attr('font-size', '10px');
-    g.append('text').attr('x', width / 2).attr('y', gHeight + 35)
+    g.append('text').attr('x', Math.max(width, 1) / 2).attr('y', gHeight + 35)
       .attr('text-anchor', 'middle').attr('font-size', '11px').attr('fill', '#6b7280').text('Zaman');
 
     timelines.forEach(tl => {
@@ -42,7 +42,7 @@ export default function TrendsView({ data, height = 300 }) {
           .attr('width', Math.max(xScale(s.window_end) - xScale(s.window_start), 2))
           .attr('height', yScale.bandwidth()).attr('fill', colorScale(s.size))
           .attr('stroke', '#1e40af').attr('stroke-width', 0.5).attr('rx', 1)
-          .append('title').text(`${tl.label}\n${s.size} uye\n${s.members.slice(0,5).join(', ')}`);
+          .append('title').text(`${tl.label}\n${s.size} üye\n${s.members.slice(0,5).join(', ')}`);
       });
     });
   }, [timelines, timeRange, height]);
@@ -97,12 +97,12 @@ export default function TrendsView({ data, height = 300 }) {
   return (
     <div>
       <div className="flex gap-4 mb-4 flex-wrap items-center text-xs text-gray-500">
-        <span><strong className="text-gray-900">{timelines.length}</strong> klik zamansali</span>
+        <span><strong className="text-gray-900">{timelines.length}</strong> klik zamansalı</span>
         <span>{formatTime(timeRange[0])} &mdash; {formatTime(timeRange[1])}</span>
         <span><strong className="text-gray-900">{windowEdges.length}</strong> pencere</span>
         <label className="flex items-center gap-1.5 cursor-pointer hover:text-gray-700">
           <input type="checkbox" checked={showLines} onChange={e => setShowLines(e.target.checked)} className="w-3 h-3" />
-          Boyut egrisi
+          Boyut eğrisi
         </label>
       </div>
       <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
@@ -114,7 +114,7 @@ export default function TrendsView({ data, height = 300 }) {
         </div>
       )}
       <div className="mt-4">
-        <div className="text-sm font-medium text-gray-900 mb-3">Klik Detaylari</div>
+        <div className="text-sm font-medium text-gray-900 mb-3">Klik Detayları</div>
         <div className="flex flex-col gap-1.5">
           {timelines.map((tl, i) => (
             <div key={tl.id} className="border border-gray-200 rounded-lg p-3 bg-white text-sm"

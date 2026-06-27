@@ -13,7 +13,7 @@ export default function CompareTimeRange({ timeRange, timeMin, timeMax, timeMin2
     <div className="border border-gray-200 rounded-lg p-4 mb-4 bg-white animate-in">
       <div className="grid md:grid-cols-2 gap-6 mb-3">
         <div>
-          <div className="text-xs text-gray-500 mb-1.5">Donem A: {formatTime(timeMin)} &mdash; {formatTime(timeMax)}</div>
+          <div className="text-xs text-gray-500 mb-1.5">Dönem A: {formatTime(timeMin)} &mdash; {formatTime(timeMax)}</div>
           <div className="relative h-8">
             <input type="range" min={timeRange.min} max={timeRange.max} step={step} value={timeMin}
               onChange={e => { const v = Number(e.target.value); if (v <= timeMax) onMinChange(v); }}
@@ -32,7 +32,7 @@ export default function CompareTimeRange({ timeRange, timeMin, timeMax, timeMin2
           </div>
         </div>
         <div>
-          <div className="text-xs text-gray-500 mb-1.5">Donem B: {formatTime(timeMin2)} &mdash; {formatTime(timeMax2)}</div>
+          <div className="text-xs text-gray-500 mb-1.5">Dönem B: {formatTime(timeMin2)} &mdash; {formatTime(timeMax2)}</div>
           <div className="relative h-8">
             <input type="range" min={timeRange.min} max={timeRange.max} step={step} value={timeMin2}
               onChange={e => { const v = Number(e.target.value); if (v <= timeMax2) onMin2Change(v); }}
@@ -59,7 +59,7 @@ export default function CompareTimeRange({ timeRange, timeMin, timeMax, timeMin2
         <button onClick={() => onCompare(currentGraph, compareGraph)}
           disabled={loading || !currentGraph || !compareGraph}
           className="px-4 py-1.5 bg-gray-900 text-white text-xs font-medium rounded-md hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
-          {loading ? 'Karsilastiriliyor...' : `Karsilastir (${currentGraph?.vertices?.length || 0}v x ${compareGraph?.vertices?.length || 0}v)`}
+          {loading ? 'Karşılaştırılıyor...' : `Karşılaştır (${currentGraph?.vertices?.length || 0}v x ${compareGraph?.vertices?.length || 0}v)`}
         </button>
         <button onClick={() => onTrends(fullGraph)} disabled={loading || !fullGraph}
           className="px-4 py-1.5 border border-gray-200 text-xs font-medium text-gray-600 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
@@ -77,16 +77,16 @@ export function CompareResult({ data }) {
   return (
     <div className="animate-in">
       <div className="border border-gray-200 rounded-lg bg-gray-50 p-4 mb-5 text-sm text-gray-700">
-        Iki donem: kelimelerin <strong>%{c.vertex_overlap_pct}'i</strong> ortak,
-        baglantilarin <strong>%{c.edge_overlap_pct}'si</strong> ortak.
-        Klik benzerligi: <strong>{c.clique_jaccard}</strong>.
+        İki dönem: kelimelerin <strong>%{c.vertex_overlap_pct}&apos;i</strong> ortak,
+        bağlantıların <strong>%{c.edge_overlap_pct}&apos;si</strong> ortak.
+        Klik benzerliği: <strong>{c.clique_jaccard}</strong>.
         {c.savings_compare !== 'Equal' && <> Verimlilik: <strong>{c.savings_compare}</strong>.</>}
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 border border-gray-200 rounded-lg overflow-hidden mb-6">
         {[
           { label: 'Ortak Kelime', value: `%${c.vertex_overlap_pct}` },
-          { label: 'Ortak Baglanti', value: `%${c.edge_overlap_pct}` },
+          { label: 'Ortak Bağlantı', value: `%${c.edge_overlap_pct}` },
           { label: 'Kazanan', value: c.savings_compare },
           { label: 'Klik A', value: c.clique_count_1 },
           { label: 'Klik B', value: c.clique_count_2 },
@@ -100,21 +100,21 @@ export function CompareResult({ data }) {
 
       <div className="grid md:grid-cols-2 gap-4 mb-6">
         <div className="border border-gray-200 rounded-lg p-4">
-          <div className="text-xs text-gray-500 mb-3">Donem A</div>
+          <div className="text-xs text-gray-500 mb-3">Dönem A</div>
           <div className="grid grid-cols-2 border border-gray-100 rounded overflow-hidden">
             <MetricCard label="Toplam" value={data.spanner1.metrics.uploaded_edges} />
             <MetricCard label="Spanner" value={data.spanner1.metrics.spanner_edges} />
             <MetricCard label="Tasarruf" value={`%${data.spanner1.metrics.savings_pct}`} />
-            <MetricCard label="Dugum Basi" value={data.spanner1.metrics.ratio_per_n} />
+            <MetricCard label="Düğüm Başı" value={data.spanner1.metrics.ratio_per_n} />
           </div>
         </div>
         <div className="border border-gray-200 rounded-lg p-4">
-          <div className="text-xs text-gray-500 mb-3">Donem B</div>
+          <div className="text-xs text-gray-500 mb-3">Dönem B</div>
           <div className="grid grid-cols-2 border border-gray-100 rounded overflow-hidden">
             <MetricCard label="Toplam" value={data.spanner2.metrics.uploaded_edges} />
             <MetricCard label="Spanner" value={data.spanner2.metrics.spanner_edges} />
             <MetricCard label="Tasarruf" value={`%${data.spanner2.metrics.savings_pct}`} />
-            <MetricCard label="Dugum Basi" value={data.spanner2.metrics.ratio_per_n} />
+            <MetricCard label="Düğüm Başı" value={data.spanner2.metrics.ratio_per_n} />
           </div>
         </div>
       </div>
@@ -127,8 +127,8 @@ export function CompareResult({ data }) {
           const cmb = buildCliqueColorMap(data.spanner2.original.vertices, cb);
           return (
             <>
-              <GraphViewer graph={data.spanner1.spanner} label={`Donem A (${ca.length} klik)`} height={400} colorMap={cma} />
-              <GraphViewer graph={data.spanner2.spanner} label={`Donem B (${cb.length} klik)`} height={400} colorMap={cmb} />
+              <GraphViewer graph={data.spanner1.spanner} label={`Dönem A (${ca.length} klik)`} height={400} colorMap={cma} />
+              <GraphViewer graph={data.spanner2.spanner} label={`Dönem B (${cb.length} klik)`} height={400} colorMap={cmb} />
             </>
           );
         })()}

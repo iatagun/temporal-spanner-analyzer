@@ -17,7 +17,7 @@ export default function TimeRangeSlider({
       <div className="text-xs text-gray-500 mb-3">
         {formatTime(timeMin)} &mdash; {formatTime(timeMax)}
         <span className="text-gray-400 ml-1">
-          (tumu: {formatTime(timeRange.min)} &mdash; {formatTime(timeRange.max)})
+          (tümü: {formatTime(timeRange.min)} &mdash; {formatTime(timeRange.max)})
         </span>
       </div>
 
@@ -50,13 +50,13 @@ export default function TimeRangeSlider({
       <div className="flex gap-2 items-center flex-wrap">
         <button onClick={onApply} disabled={loading || !currentGraph}
           className="px-4 py-1.5 bg-gray-900 text-white text-xs font-medium rounded-md hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
-          {loading ? 'Hesaplaniyor...' : `Spanner (${currentGraph?.vertices?.length || 0}v, ${currentGraph?.edges?.length || 0}e)`}
+          {loading ? 'Hesaplanıyor...' : `Spanner (${currentGraph?.vertices?.length || 0}v, ${currentGraph?.edges?.length || 0}e)`}
         </button>
         <button onClick={onLiveToggle}
           className={`px-3 py-1.5 text-xs font-medium rounded-md border transition-colors ${
             liveMode ? 'bg-amber-50 border-amber-300 text-amber-700' : 'border-gray-200 text-gray-500 hover:bg-gray-50'
           }`}>
-          {liveMode ? 'Canli: Acik' : 'Canli: Kapali'}
+          {liveMode ? 'Canlı: Açık' : 'Canlı: Kapalı'}
         </button>
         <button onClick={() => onTrends(fullGraph)} disabled={loading || !fullGraph}
           className="px-4 py-1.5 border border-gray-200 text-xs font-medium text-gray-600 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">

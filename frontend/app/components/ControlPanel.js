@@ -24,12 +24,12 @@ export default function ControlPanel({
         }}
       >
         <div className="text-sm text-gray-500 mb-3">
-          CoNLL-U, VRT, CSV veya JSON dosyasi surukleyin
+          CoNLL-U, VRT, CSV veya JSON dosyası sürükleyin
         </div>
 
         <div className="flex items-center justify-center gap-3">
           <label className="inline-block px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded-md cursor-pointer hover:bg-gray-800 transition-colors">
-            Dosya Sec
+            Dosya Seç
             <input
               type="file"
               accept=".csv,.json,.conllu,.conll,.vrt"
@@ -49,7 +49,7 @@ export default function ControlPanel({
             disabled={loading}
             className="px-4 py-2 border border-gray-300 text-sm text-gray-600 font-medium rounded-md hover:bg-gray-50 disabled:opacity-50 transition-colors"
           >
-            Ornek Veri ile Dene
+            Örnek Veri ile Dene
           </button>
         </div>
 
@@ -74,7 +74,7 @@ export default function ControlPanel({
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
             </svg>
-            Isleniyor...
+            İşleniyor...
           </span>
         )}
       </div>

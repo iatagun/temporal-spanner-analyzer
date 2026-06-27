@@ -17,13 +17,13 @@ export default function MetricCards({ metrics }) {
   if (!metrics) return null;
 
   const cards = [
-    { label: 'Yuklenen', value: metrics.uploaded_edges },
-    { label: 'Tum Olasi', value: metrics.full_clique_edges },
+    { label: 'Yüklenen', value: metrics.uploaded_edges },
+    { label: 'Tüm Olası', value: metrics.full_clique_edges },
     { label: 'Spanner', value: metrics.spanner_edges },
     { label: 'Tasarruf', value: `%${metrics.savings_pct}` },
-    { label: 'Dugum Basina', value: metrics.ratio_per_n },
-    { label: 'Ust Sinir (7n)', value: metrics.bound_7n },
-    { label: 'Dogrulama', value: metrics.verified === true ? 'Gecerli' : metrics.verified === false ? 'Hata' : 'Atlandi' },
+    { label: 'Düğüm Başına', value: metrics.ratio_per_n },
+    { label: 'Üst Sınır (7n)', value: metrics.bound_7n },
+    { label: 'Doğrulama', value: metrics.verified === true ? 'Geçerli' : metrics.verified === false ? 'Hata' : 'Atlandı' },
     { label: 'Uzatma', value: metrics.stretch_factor != null ? metrics.stretch_factor : '-' },
   ];
 

@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic';
 
 const CytoscapeComponent = dynamic(
   () => import('react-cytoscapejs'),
-  { ssr: false, loading: () => <div className="h-[400px] flex items-center justify-center bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-400">Yukleniyor...</div> }
+  { ssr: false, loading: () => <div className="h-[400px] flex items-center justify-center bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-400">Yükleniyor...</div> }
 );
 
 const cyStyles = [
