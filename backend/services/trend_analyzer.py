@@ -52,7 +52,7 @@ def compute_trends(graph: GraphSchema, windows: int = 10) -> TrendResponse:
             window_adj[u].add(v)
             window_adj[v].add(u)
 
-        cliques = maximal_cliques(window_adj, min_size=3)
+        cliques = maximal_cliques(window_adj, min_size=2)
         window_cliques.append(cliques)
 
     timelines: list[CliqueTimeline] = []
@@ -62,6 +62,7 @@ def compute_trends(graph: GraphSchema, windows: int = 10) -> TrendResponse:
         ws = t_min + w * step
         we = ws + step if w < windows - 1 else t_max + 0.001
 
+        pre_existing = len(timelines)
         matched: set[int] = set()
         active_timelines = [(i, tl) for i, tl in enumerate(timelines) if tl.death is None]
         last_snap_sets = [(i, tl, set(tl.snapshots[-1].members)) for i, tl in active_timelines]
@@ -78,7 +79,7 @@ def compute_trends(graph: GraphSchema, windows: int = 10) -> TrendResponse:
                     best_tl = tl
                     best_idx = idx
 
-            if best_tl and best_score >= 0.4:
+            if best_tl and best_score >= 0.25:
                 matched.add(best_idx)
                 best_tl.snapshots.append(
                     CliqueSnapshot(
@@ -111,7 +112,8 @@ def compute_trends(graph: GraphSchema, windows: int = 10) -> TrendResponse:
                 next_id += 1
 
         if w < windows - 1:
-            for i, tl in enumerate(timelines):
+            for i in range(pre_existing):
+                tl = timelines[i]
                 if tl.death is None and i not in matched:
                     tl.death = ws
 
