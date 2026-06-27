@@ -10,6 +10,8 @@ import CompareTimeRange, { CompareResult } from './components/CompareView';
 import TrendsView from './components/TrendsView';
 import ExploreView from './components/ExploreView';
 import LoadingSkeleton from './components/LoadingSkeleton';
+import LeftSidebar from './components/LeftSidebar';
+import RightSidebar from './components/RightSidebar';
 import { filterGraph } from './lib/utils';
 import { computeSpanner, computeTrends, computeCompare, uploadCSV } from './lib/api';
 
@@ -155,87 +157,103 @@ export default function Home() {
   ];
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
-      <Header />
-
-      <ControlPanel
-        loading={loading}
-        onUpload={handleUpload}
-        onSample={handleSample}
-        minFreq={minFreq}
-        setMinFreq={setMinFreq}
-      />
-
-      {error && (
-        <div className="p-3 mb-6 border border-red-200 bg-red-50 text-red-700 text-sm animate-in">
-          {error}
+    <div className="min-h-screen">
+      <div className="flex justify-center gap-6 px-4 sm:px-6 py-8 max-w-[1400px] mx-auto">
+        <div className="hidden xl:block w-52 flex-shrink-0 pt-1">
+          <div className="sticky top-8">
+            <LeftSidebar />
+          </div>
         </div>
-      )}
 
-      {uploadTimeRange && view !== 'compare' && (
-        <TimeRangeSlider
-          timeRange={uploadTimeRange}
-          timeMin={timeMin} timeMax={timeMax}
-          onMinChange={setTimeMin} onMaxChange={setTimeMax}
-          liveMode={liveMode} onLiveToggle={() => setLiveMode(!liveMode)}
-          loading={loading}
-          currentGraph={currentGraph}
-          fullGraph={fullGraph}
-          onApply={handleApplyFilter}
-          onTrends={doTrends}
-        />
-      )}
+        <div className="flex-1 min-w-0 max-w-3xl">
+          <Header />
 
-      {uploadInfo?.graph && (
-        <div className="mt-6 mb-5">
-          <TabBar tabs={viewTabs} active={view}
-            onChange={(v) => {
-              setView(v);
-              if (v === 'spanner' && !result) handleApplyFilter();
-              if (v === 'trends' && !trendData) doTrends(fullGraph || currentGraph);
-              if (v === 'compare' && !compareData && currentGraph && compareGraph) doCompare(currentGraph, compareGraph);
-            }}
+          <ControlPanel
+            loading={loading}
+            onUpload={handleUpload}
+            onSample={handleSample}
+            minFreq={minFreq}
+            setMinFreq={setMinFreq}
           />
+
+          {error && (
+            <div className="p-3 mb-6 border border-red-200 bg-red-50 text-red-700 text-sm animate-in">
+              {error}
+            </div>
+          )}
+
+          {uploadTimeRange && view !== 'compare' && (
+            <TimeRangeSlider
+              timeRange={uploadTimeRange}
+              timeMin={timeMin} timeMax={timeMax}
+              onMinChange={setTimeMin} onMaxChange={setTimeMax}
+              liveMode={liveMode} onLiveToggle={() => setLiveMode(!liveMode)}
+              loading={loading}
+              currentGraph={currentGraph}
+              fullGraph={fullGraph}
+              onApply={handleApplyFilter}
+              onTrends={doTrends}
+            />
+          )}
+
+          {uploadInfo?.graph && (
+            <div className="mt-6 mb-5">
+              <TabBar tabs={viewTabs} active={view}
+                onChange={(v) => {
+                  setView(v);
+                  if (v === 'spanner' && !result) handleApplyFilter();
+                  if (v === 'trends' && !trendData) doTrends(fullGraph || currentGraph);
+                  if (v === 'compare' && !compareData && currentGraph && compareGraph) doCompare(currentGraph, compareGraph);
+                }}
+              />
+            </div>
+          )}
+
+          {uploadTimeRange && view === 'compare' && (
+            <CompareTimeRange
+              timeRange={uploadTimeRange}
+              timeMin={timeMin} timeMax={timeMax}
+              timeMin2={timeMin2} timeMax2={timeMax2}
+              onMinChange={setTimeMin} onMaxChange={setTimeMax}
+              onMin2Change={setTimeMin2} onMax2Change={setTimeMax2}
+              loading={compareLoading}
+              currentGraph={currentGraph}
+              compareGraph={compareGraph}
+              fullGraph={fullGraph}
+              onCompare={doCompare}
+              onTrends={doTrends}
+            />
+          )}
+
+          {loading && uploadInfo?.graph && <LoadingSkeleton />}
+
+          {!loading && view === 'spanner' && result && <SpannerView result={result} />}
+
+          {view === 'trends' && trendData && (
+            <div className="mb-8 animate-in">
+              <TrendsView data={trendData} height={400} />
+            </div>
+          )}
+
+          {view === 'explore' && (
+            <div className="mb-8 animate-in">
+              <ExploreView fullGraph={uploadInfo?.graph || currentGraph} onSample={handleSample} />
+            </div>
+          )}
+
+          {view === 'compare' && compareData && <CompareResult data={compareData} />}
+
+          <footer className="text-xs text-gray-400 text-center mt-12 pt-5 border-t border-gray-100">
+            Baligacs (2026) &quot;Temporal Cliques Admit Linear Spanners&quot;
+          </footer>
         </div>
-      )}
 
-      {uploadTimeRange && view === 'compare' && (
-        <CompareTimeRange
-          timeRange={uploadTimeRange}
-          timeMin={timeMin} timeMax={timeMax}
-          timeMin2={timeMin2} timeMax2={timeMax2}
-          onMinChange={setTimeMin} onMaxChange={setTimeMax}
-          onMin2Change={setTimeMin2} onMax2Change={setTimeMax2}
-          loading={compareLoading}
-          currentGraph={currentGraph}
-          compareGraph={compareGraph}
-          fullGraph={fullGraph}
-          onCompare={doCompare}
-          onTrends={doTrends}
-        />
-      )}
-
-      {loading && uploadInfo?.graph && <LoadingSkeleton />}
-
-      {!loading && view === 'spanner' && result && <SpannerView result={result} />}
-
-      {view === 'trends' && trendData && (
-        <div className="mb-8 animate-in">
-          <TrendsView data={trendData} height={400} />
+        <div className="hidden xl:block w-52 flex-shrink-0 pt-1">
+          <div className="sticky top-8">
+            <RightSidebar />
+          </div>
         </div>
-      )}
-
-      {view === 'explore' && (
-        <div className="mb-8 animate-in">
-          <ExploreView fullGraph={uploadInfo?.graph || currentGraph} onSample={handleSample} />
-        </div>
-      )}
-
-      {view === 'compare' && compareData && <CompareResult data={compareData} />}
-
-      <footer className="text-xs text-gray-400 text-center mt-12 pt-5 border-t border-gray-100">
-        Baligacs (2026) &quot;Temporal Cliques Admit Linear Spanners&quot;
-      </footer>
+      </div>
     </div>
   );
 }
