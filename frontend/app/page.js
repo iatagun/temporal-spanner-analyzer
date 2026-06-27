@@ -158,14 +158,14 @@ export default function Home() {
 
   return (
     <div className="min-h-screen">
-      <div className="flex justify-center gap-6 px-4 sm:px-6 py-8 max-w-[1400px] mx-auto">
+      <div className="flex gap-6 px-6 py-8">
         <div className="hidden xl:block w-52 flex-shrink-0 pt-1">
           <div className="sticky top-8">
             <LeftSidebar />
           </div>
         </div>
 
-        <div className="flex-1 min-w-0 max-w-3xl">
+        <div className="flex-1 min-w-0">
           <Header />
 
           <ControlPanel
