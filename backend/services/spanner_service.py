@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import os
 from spanner.types import TemporalGraph, VertexID
 from spanner.core import spanner_for_clique
 from spanner.verify import verify_spanner, VerificationError
 
 from backend.models import GraphSchema, CliqueQualitySchema
 from backend.services.graph_utils import build_static_adj, maximal_cliques
+
+_VERIFY = os.getenv("SPANNER_VERIFY", "").lower() in ("1", "true", "yes")
 
 
 def _build_label_dict(
@@ -47,11 +50,13 @@ def _process_clique(
     all_spanner_edges.update(E)
     added = len(all_spanner_edges) - before
 
-    try:
-        verify_spanner(G, E, 7 * len(clique))
-        verified = True
-    except VerificationError:
-        verified = False
+    verified = False
+    if _VERIFY:
+        try:
+            verify_spanner(G, E, 7 * len(clique))
+            verified = True
+        except VerificationError:
+            verified = False
 
     return CliqueQualitySchema(
         size=len(clique),
@@ -85,15 +90,8 @@ def compute_spanner_pipeline(
         cq = _process_clique(clique, lbl, all_spanner_edges, clique_pairs)
         clique_qualities.append(cq)
 
-    edges_covered: set[tuple[str, str]] = set()
-    for clique in cliques:
-        cv_sorted = sorted(clique)
-        for i in range(len(cv_sorted)):
-            for j in range(i + 1, len(cv_sorted)):
-                edges_covered.add((cv_sorted[i], cv_sorted[j]))
-
     for key in lbl:
-        if key not in edges_covered:
+        if key not in clique_pairs:
             all_spanner_edges.add(key)
 
-    return lbl, max_label, cliques, all_spanner_edges, clique_qualities, edges_covered, clique_pairs
+    return lbl, max_label, cliques, all_spanner_edges, clique_qualities, clique_pairs, clique_pairs

@@ -79,10 +79,10 @@ export default function ControlPanel({
         <div className="flex gap-4 items-end flex-wrap">
           <div>
             <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1.5">
-              CSV File (date, words)
+              CSV / JSON / CoNLL-U / VRT
             </label>
             <input
-              type="file" accept=".csv,.json" ref={fileRef}
+              type="file"               accept=".csv,.json,.conllu,.conll,.vrt" ref={fileRef}
               className="text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 
                          file:text-sm file:font-semibold file:bg-primary file:text-white 
                          file:hover:bg-primary-dark file:transition-colors file:cursor-pointer

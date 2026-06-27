@@ -9,6 +9,7 @@ import SpannerView from './components/SpannerView';
 import CompareTimeRange, { CompareResult } from './components/CompareView';
 import TrendsView from './components/TrendsView';
 import ExploreView from './components/ExploreView';
+import LoadingSkeleton from './components/LoadingSkeleton';
 import { generateGraph, filterGraph } from './lib/utils';
 import { computeSpanner, computeTrends, computeCompare, uploadCSV } from './lib/api';
 
@@ -209,7 +210,9 @@ export default function Home() {
         />
       )}
 
-      {view === 'spanner' && result && <SpannerView result={result} />}
+      {loading && uploadInfo?.graph && <LoadingSkeleton />}
+
+      {!loading && view === 'spanner' && result && <SpannerView result={result} />}
 
       {view === 'trends' && trendData && (
         <div className="mb-8 animate-fade-in">

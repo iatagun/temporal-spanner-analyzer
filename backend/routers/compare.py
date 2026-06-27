@@ -38,6 +38,7 @@ def _compute_spanner_response(req_graph: GraphSchema) -> SpannerResponse:
         return SpannerResponse(
             original=req_graph,
             spanner=GraphSchema(vertices=sorted(V, key=str), edges=[]),
+            cliques=[],
             metrics=MetricSchema(
                 uploaded_edges=len(req_graph.edges),
                 full_clique_edges=0,
@@ -80,6 +81,7 @@ def _compute_spanner_response(req_graph: GraphSchema) -> SpannerResponse:
     return SpannerResponse(
         original=req_graph,
         spanner=GraphSchema(vertices=sorted(V, key=str), edges=spanner_edges_out),
+        cliques=[sorted(c) for c in cliques],
         metrics=MetricSchema(
             uploaded_edges=uploaded_count,
             full_clique_edges=len(lbl),

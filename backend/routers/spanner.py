@@ -13,7 +13,8 @@ from backend.models import (
     MetricSchema,
     UploadResponse,
 )
-from backend.services.graph_builder import parse_csv, parse_json
+from backend.services.graph_builder import parse_csv, parse_json, parse_corpus_rows
+from backend.services.corpus_parser import detect_and_parse
 from backend.services.spanner_service import compute_spanner_pipeline
 
 router = APIRouter()
@@ -86,6 +87,7 @@ def compute_spanner(req: SpannerRequest) -> SpannerResponse:
         return SpannerResponse(
             original=req.graph,
             spanner=GraphSchema(vertices=sorted(V, key=str), edges=[]),
+            cliques=[],
             metrics=MetricSchema(
                 uploaded_edges=len(req.graph.edges),
                 full_clique_edges=0,
@@ -138,6 +140,7 @@ def compute_spanner(req: SpannerRequest) -> SpannerResponse:
             vertices=sorted(V, key=str),
             edges=spanner_edges_out,
         ),
+        cliques=[sorted(c) for c in cliques],
         metrics=MetricSchema(
             uploaded_edges=uploaded_count,
             full_clique_edges=len(lbl),
@@ -160,14 +163,33 @@ def upload_csv(file: UploadFile = File(...)):
         raise HTTPException(400, "File is required")
 
     content = file.file.read()
+    ext = file.filename.lower()
 
-    is_json = file.filename.endswith(".json")
-    is_csv = file.filename.endswith(".csv")
-    if not is_csv and not is_json:
-        raise HTTPException(400, "Only CSV and JSON files are supported")
+    is_json = ext.endswith(".json")
+    is_csv = ext.endswith(".csv")
+    is_corpus = ext.endswith(".conllu") or ext.endswith(".conll") or ext.endswith(".vrt")
+
+    if not is_csv and not is_json and not is_corpus:
+        raise HTTPException(
+            400,
+            "Only CSV, JSON, CoNLL-U (.conllu/.conll), and VRT (.vrt) files are supported",
+        )
 
     try:
-        if is_json:
+        if is_corpus:
+            content_str = content.decode("utf-8-sig")
+            rows, fmt, meta = detect_and_parse(content_str, file.filename)
+            if not rows:
+                raise ValueError(
+                    f"No valid rows found in {fmt} file. "
+                    "CoNLL-U: tab-separated columns with word/lemma in column 2/3. "
+                    "VRT: <text> tags with tab-separated word lines."
+                )
+            graph, dates, rows_parsed, _ = parse_corpus_rows(
+                rows, pmi_threshold=PMI_THRESHOLD_DEFAULT
+            )
+            stopwords_filtered = 0
+        elif is_json:
             graph, dates, rows_parsed, stopwords_filtered = parse_json(
                 content, pmi_threshold=PMI_THRESHOLD_DEFAULT
             )

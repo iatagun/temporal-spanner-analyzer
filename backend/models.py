@@ -43,6 +43,7 @@ class SpannerResponse(BaseModel):
     original: GraphSchema
     spanner: GraphSchema
     metrics: MetricSchema
+    cliques: list[list[str]] = []
 
 
 class CsvRow(BaseModel):

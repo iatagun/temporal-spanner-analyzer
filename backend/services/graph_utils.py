@@ -21,13 +21,17 @@ def maximal_cliques(
     adj: dict[str, set[str]], min_size: int = 3
 ) -> list[set[str]]:
     cliques: list[set[str]] = []
+    if not adj:
+        return cliques
 
     def bk(R: set[str], P: set[str], X: set[str]):
+        if len(R) + len(P) < min_size:
+            return
         if not P and not X:
             if len(R) >= min_size:
                 cliques.append(set(R))
             return
-        pivot = next(iter(P | X))
+        pivot = max(P | X, key=lambda v: len(adj[v] & P))
         for v in list(P - adj[pivot]):
             bk(R | {v}, P & adj[v], X & adj[v])
             P.remove(v)

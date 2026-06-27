@@ -2,12 +2,14 @@
 
 import GraphViewer from './GraphViewer';
 import MetricCards from './MetricCards';
-import { maximalCliques, buildCliqueColorMap, getSavingsDescription } from '../lib/utils';
+import { buildCliqueColorMap, getSavingsDescription } from '../lib/utils';
 
 export default function SpannerView({ result }) {
   if (!result) return null;
 
-  const cliques = maximalCliques(result.original.vertices, result.original.edges);
+  const cliques = (result.cliques && result.cliques.length > 0)
+    ? result.cliques.map(c => new Set(c))
+    : [];
   const cmap = buildCliqueColorMap(result.original.vertices, cliques);
   const m = result.metrics;
 

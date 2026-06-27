@@ -194,6 +194,27 @@ def parse_csv(
     return graph, dates, rows_parsed, stopword_count
 
 
+def parse_corpus_rows(
+    rows: list[tuple[str, list[str]]], pmi_threshold: float = 0.0
+) -> tuple[GraphSchema, list[str], int, int]:
+    collected: list[tuple[float, list[str]]] = []
+    for date_str, words in rows:
+        label = parse_label(date_str) if date_str else parse_label("1970-01-01")
+        collected.append((label, words))
+
+    word_only_rows = [words for _, words in collected]
+    pmi = _compute_pmi(word_only_rows)
+
+    word_set: set[str] = set()
+    edges: list[EdgeSchema] = []
+    dates: list[str] = []
+
+    for label_val, words in collected:
+        _words_to_edges_filtered(words, label_val, word_set, edges, dates, pmi, pmi_threshold)
+
+    V = sorted(word_set)
+    graph = GraphSchema(vertices=V, edges=edges)
+    return graph, dates, len(collected), 0
 def parse_json(
     content: bytes, pmi_threshold: float = 0.0
 ) -> tuple[GraphSchema, list[str], int, int]:

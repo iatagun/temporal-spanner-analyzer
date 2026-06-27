@@ -1,5 +1,6 @@
 from __future__ import annotations
 from collections import deque
+from functools import lru_cache
 from spanner.types import TemporalGraph, TemporalBiClique, VertexID
 
 
@@ -12,30 +13,36 @@ def label(v: VertexID, u: VertexID, G: TemporalGraph | TemporalBiClique) -> floa
     return G.label[_edge_key(v, u)]
 
 
-def Nmin(v: VertexID, G: TemporalGraph | TemporalBiClique) -> VertexID:
+def _neighbors(v: VertexID, G: TemporalGraph | TemporalBiClique) -> list[VertexID]:
     if isinstance(G, TemporalBiClique):
-        candidates = [
-            w for w in (G.T if v in G.S else G.S)
-            if _edge_key(v, w) in G.label
-        ]
-    else:
-        candidates = [w for w in G.V if w != v and _edge_key(v, w) in G.label]
+        return [w for w in (G.T if v in G.S else G.S) if _edge_key(v, w) in G.label]
+    return [w for w in G.V if w != v and _edge_key(v, w) in G.label]
+
+
+@lru_cache(maxsize=4096)
+def _nmin_key(v: str, neighbors_key: str, graph_id: int) -> str:
+    return ""
+
+
+@lru_cache(maxsize=4096)
+def _nmax_key(v: str, neighbors_key: str, graph_id: int) -> str:
+    return ""
+
+
+def Nmin(v: VertexID, G: TemporalGraph | TemporalBiClique) -> VertexID:
+    candidates = _neighbors(v, G)
     if not candidates:
         raise ValueError(f"{v} has no neighbours")
-    return min(candidates, key=lambda w: label(v, w, G))
+    result = min(candidates, key=lambda w: label(v, w, G))
+    return result
 
 
 def Nmax(v: VertexID, G: TemporalGraph | TemporalBiClique) -> VertexID:
-    if isinstance(G, TemporalBiClique):
-        candidates = [
-            w for w in (G.T if v in G.S else G.S)
-            if _edge_key(v, w) in G.label
-        ]
-    else:
-        candidates = [w for w in G.V if w != v and _edge_key(v, w) in G.label]
+    candidates = _neighbors(v, G)
     if not candidates:
         raise ValueError(f"{v} has no neighbours")
-    return max(candidates, key=lambda w: label(v, w, G))
+    result = max(candidates, key=lambda w: label(v, w, G))
+    return result
 
 
 def pos(v: VertexID, u: VertexID, G: TemporalGraph | TemporalBiClique) -> int:

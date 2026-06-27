@@ -2,7 +2,7 @@
 
 import GraphViewer from './GraphViewer';
 import { MetricCard } from './MetricCards';
-import { formatTime, maximalCliques, buildCliqueColorMap } from '../lib/utils';
+import { formatTime, buildCliqueColorMap } from '../lib/utils';
 
 export default function CompareTimeRange({ timeRange, timeMin, timeMax, timeMin2, timeMax2, onMinChange, onMaxChange, onMin2Change, onMax2Change, loading, currentGraph, compareGraph, fullGraph, onCompare, onTrends }) {
   if (!timeRange) return null;
@@ -160,8 +160,8 @@ export function CompareResult({ data }) {
 
       <div className="grid md:grid-cols-2 gap-5 mb-8">
         {(() => {
-          const ca = maximalCliques(data.spanner1.original.vertices, data.spanner1.original.edges);
-          const cb = maximalCliques(data.spanner2.original.vertices, data.spanner2.original.edges);
+          const ca = (data.spanner1.cliques || []).map(c => new Set(c));
+          const cb = (data.spanner2.cliques || []).map(c => new Set(c));
           const cma = buildCliqueColorMap(data.spanner1.original.vertices, ca);
           const cmb = buildCliqueColorMap(data.spanner2.original.vertices, cb);
           return (

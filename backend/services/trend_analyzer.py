@@ -1,3 +1,4 @@
+from bisect import bisect_left, bisect_right
 from backend.models import (
     GraphSchema,
     CliqueSnapshot,
@@ -17,9 +18,11 @@ def compute_trends(graph: GraphSchema, windows: int = 10) -> TrendResponse:
     if not graph.edges:
         return TrendResponse(timelines=[], time_range=[0, 0], window_edges=[])
 
-    labels = [e.label for e in graph.edges]
-    t_min = min(labels)
-    t_max = max(labels)
+    sorted_edges = sorted(graph.edges, key=lambda e: e.label)
+    edge_labels = [e.label for e in sorted_edges]
+
+    t_min = edge_labels[0]
+    t_max = edge_labels[-1]
     if t_max == t_min:
         t_max = t_min + 1.0
 
@@ -32,13 +35,15 @@ def compute_trends(graph: GraphSchema, windows: int = 10) -> TrendResponse:
         ws = t_min + w * step
         we = ws + step if w < windows - 1 else t_max + 0.001
 
+        start_idx = bisect_left(edge_labels, ws)
+        end_idx = bisect_left(edge_labels, we)
+
         v_set: set[str] = set()
         e_list: list[tuple[str, str]] = []
-        for e in graph.edges:
-            if ws <= e.label < we:
-                v_set.add(e.u)
-                v_set.add(e.v)
-                e_list.append((e.u, e.v))
+        for e in sorted_edges[start_idx:end_idx]:
+            v_set.add(e.u)
+            v_set.add(e.v)
+            e_list.append((e.u, e.v))
 
         window_edges.append(len(e_list))
 
@@ -47,7 +52,7 @@ def compute_trends(graph: GraphSchema, windows: int = 10) -> TrendResponse:
             window_adj[u].add(v)
             window_adj[v].add(u)
 
-        cliques = maximal_cliques(window_adj, min_size=2)
+        cliques = maximal_cliques(window_adj, min_size=3)
         window_cliques.append(cliques)
 
     timelines: list[CliqueTimeline] = []
@@ -58,20 +63,23 @@ def compute_trends(graph: GraphSchema, windows: int = 10) -> TrendResponse:
         we = ws + step if w < windows - 1 else t_max + 0.001
 
         matched: set[int] = set()
+        active_timelines = [(i, tl) for i, tl in enumerate(timelines) if tl.death is None]
+        last_snap_sets = [(i, tl, set(tl.snapshots[-1].members)) for i, tl in active_timelines]
+
         for c in cliques:
+            best_idx = -1
             best_tl = None
             best_score = 0.0
-            for tl in timelines:
-                if tl.death is not None:
-                    continue
-                last_snap = tl.snapshots[-1]
-                score = _jaccard(c, set(last_snap.members))
+            c_set = c
+            for idx, tl, snap_set in last_snap_sets:
+                score = _jaccard(c_set, snap_set)
                 if score > best_score:
                     best_score = score
                     best_tl = tl
+                    best_idx = idx
 
             if best_tl and best_score >= 0.4:
-                matched.add(timelines.index(best_tl))
+                matched.add(best_idx)
                 best_tl.snapshots.append(
                     CliqueSnapshot(
                         window=w,
