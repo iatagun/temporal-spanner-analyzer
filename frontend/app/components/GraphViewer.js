@@ -5,41 +5,34 @@ import dynamic from 'next/dynamic';
 
 const CytoscapeComponent = dynamic(
   () => import('react-cytoscapejs'),
-  { ssr: false, loading: () => <div className="h-[400px] flex items-center justify-center bg-slate-50 rounded-xl">Loading graph...</div> }
+  { ssr: false, loading: () => <div className="h-[400px] flex items-center justify-center bg-gray-50 border border-gray-200 text-sm text-gray-400">Yukleniyor...</div> }
 );
 
 const cyStyles = [
   {
     selector: 'node',
     style: {
-      'background-color': '#6366f1',
+      'background-color': '#4b5563',
       label: 'data(id)',
-      'font-size': '12px',
+      'font-size': '11px',
       'text-valign': 'bottom',
       'text-halign': 'center',
-      width: 30,
-      height: 30,
+      width: 28,
+      height: 28,
       'border-width': 1,
-      'border-color': '#4338ca',
+      'border-color': '#374151',
     }
   },
   {
     selector: 'edge',
     style: {
-      width: 2,
-      'line-color': '#94a3b8',
+      width: 1.5,
+      'line-color': '#9ca3af',
       'curve-style': 'bezier',
       label: 'data(label)',
-      'font-size': '10px',
+      'font-size': '9px',
       'text-rotation': 'autorotate',
-      color: '#64748b',
-    }
-  },
-  {
-    selector: 'edge.highlight',
-    style: {
-      'line-color': '#ef4444',
-      width: 3,
+      color: '#6b7280',
     }
   },
 ];
@@ -51,7 +44,7 @@ const layout = {
   idealEdgeLength: 100,
 };
 
-export default function GraphViewer({ graph, label, height = 400, colorMap, icon }) {
+export default function GraphViewer({ graph, label, height = 400, colorMap }) {
   const cyRef = useRef(null);
 
   useEffect(() => {
@@ -60,7 +53,7 @@ export default function GraphViewer({ graph, label, height = 400, colorMap, icon
         const c = colorMap[n.id()];
         if (c) {
           n.style('background-color', c);
-          n.style('border-color', '#1e293b');
+          n.style('border-color', '#1f2937');
           n.style('border-width', 2);
         }
       });
@@ -78,19 +71,16 @@ export default function GraphViewer({ graph, label, height = 400, colorMap, icon
 
   if (!graph || !graph.vertices) {
     return (
-      <div style={{ height }} className="flex items-center justify-center bg-slate-50 rounded-xl text-text-muted text-sm">
-        No graph data
+      <div style={{ height }} className="flex items-center justify-center bg-gray-50 border border-gray-200 text-sm text-gray-400">
+        Veri yok
       </div>
     );
   }
 
   return (
     <div>
-      <div className="mb-2 flex items-center gap-2">
-        {icon && <span className="text-primary">{icon}</span>}
-        <span className="text-sm font-semibold text-text">{label}</span>
-      </div>
-      <div style={{ height }} className="border border-border rounded-xl overflow-hidden bg-white shadow-sm">
+      <div className="mb-1.5 text-xs text-gray-500">{label}</div>
+      <div style={{ height }} className="border border-gray-200 bg-white">
         <CytoscapeComponent
           elements={elements}
           style={{ width: '100%', height: '100%' }}

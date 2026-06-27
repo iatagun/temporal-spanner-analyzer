@@ -2,24 +2,20 @@
 
 export default function LoadingSkeleton() {
   return (
-    <div className="animate-fade-in">
-      <div className="bg-white rounded-2xl border border-border shadow-sm p-6 mb-6">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-8 h-8 rounded-lg bg-slate-200 animate-pulse" />
-          <div className="h-5 w-48 bg-slate-200 rounded animate-pulse" />
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+    <div className="animate-in">
+      <div className="border border-gray-200 p-4 mb-6 bg-white">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-gray-100 border border-gray-100">
           {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="bg-slate-50 rounded-xl p-4 border border-slate-100">
-              <div className="h-3 w-16 bg-slate-200 rounded animate-pulse mb-2" />
-              <div className="h-6 w-12 bg-slate-200 rounded animate-pulse" />
+            <div key={i} className="bg-white p-3.5">
+              <div className="h-2.5 w-12 bg-gray-100 mb-2" />
+              <div className="h-4 w-8 bg-gray-100" />
             </div>
           ))}
         </div>
       </div>
-      <div className="grid md:grid-cols-2 gap-5 mb-8">
-        <div className="h-[450px] bg-slate-100 rounded-xl animate-pulse" />
-        <div className="h-[450px] bg-slate-100 rounded-xl animate-pulse" />
+      <div className="grid md:grid-cols-2 gap-4 mb-8">
+        <div className="h-[450px] bg-gray-50 border border-gray-200" />
+        <div className="h-[450px] bg-gray-50 border border-gray-200" />
       </div>
     </div>
   );

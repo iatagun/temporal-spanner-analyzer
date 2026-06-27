@@ -10,14 +10,11 @@ import CompareTimeRange, { CompareResult } from './components/CompareView';
 import TrendsView from './components/TrendsView';
 import ExploreView from './components/ExploreView';
 import LoadingSkeleton from './components/LoadingSkeleton';
-import { generateGraph, filterGraph } from './lib/utils';
+import { filterGraph } from './lib/utils';
 import { computeSpanner, computeTrends, computeCompare, uploadCSV } from './lib/api';
 
 export default function Home() {
-  const [mode, setMode] = useState('synthetic');
   const [view, setView] = useState('spanner');
-  const [n, setN] = useState(10);
-  const [seed, setSeed] = useState(42);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [result, setResult] = useState(null);
@@ -34,7 +31,6 @@ export default function Home() {
   const [compareData, setCompareData] = useState(null);
   const [compareLoading, setCompareLoading] = useState(false);
   const debounceRef = useRef(null);
-  const fileRef = useRef(null);
 
   const uploadTimeRange = useMemo(() => {
     if (!timeRange) return null;
@@ -42,10 +38,9 @@ export default function Home() {
   }, [timeRange]);
 
   const currentGraph = useMemo(() => {
-    if (mode === 'synthetic') return uploadInfo?.graph || null;
     if (!fullGraph || !timeRange) return uploadInfo?.graph || null;
     return filterGraph(fullGraph, timeMin, timeMax, minFreq);
-  }, [mode, uploadInfo, fullGraph, timeRange, timeMin, timeMax, minFreq]);
+  }, [uploadInfo, fullGraph, timeRange, timeMin, timeMax, minFreq]);
 
   const compareGraph = useMemo(() => {
     if (!fullGraph || !timeRange) return null;
@@ -90,16 +85,8 @@ export default function Home() {
     }
   }, []);
 
-  const handleSynthetic = () => {
-    const graph = generateGraph(n, seed);
-    setFullGraph(null); setTimeRange(null);
-    setUploadInfo({ graph, label: `Synthetic (n=${n}, seed=${seed})` });
-    setResult(null);
-    doSpanner(graph);
-  };
-
-  const handleUpload = async (file) => {
-    if (!file) { setError('Select a CSV file'); return; }
+  const processUpload = async (file) => {
+    if (!file) { setError('Dosya secin'); return; }
     setLoading(true); setError(null);
     try {
       const data = await uploadCSV(file);
@@ -119,12 +106,32 @@ export default function Home() {
       }
       setUploadInfo({
         graph: data.graph,
-        label: `${data.graph.vertices.length} vertices, ${data.graph.edges.length} edges`,
+        label: `${data.graph.vertices.length} dugum, ${data.graph.edges.length} baglanti`,
       });
       setResult(null);
+      doSpanner(data.graph);
     } catch (e) {
       setError(e.message);
     } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpload = (file) => {
+    processUpload(file);
+  };
+
+  const handleSample = async () => {
+    setLoading(true); setError(null);
+    try {
+      const res = await fetch('/sample.conllu');
+      if (!res.ok) throw new Error('Ornek dosya yuklenemedi');
+      const text = await res.text();
+      const blob = new Blob([text], { type: 'text/plain' });
+      const file = new File([blob], 'sample.conllu', { type: 'text/plain' });
+      await processUpload(file);
+    } catch (e) {
+      setError(e.message);
       setLoading(false);
     }
   };
@@ -143,31 +150,29 @@ export default function Home() {
   const viewTabs = [
     { key: 'spanner', label: 'Spanner' },
     { key: 'trends', label: 'Trends' },
-    { key: 'compare', label: 'Compare' },
-    { key: 'explore', label: 'Explore' },
+    { key: 'compare', label: 'Karsilastir' },
+    { key: 'explore', label: 'Kesfet' },
   ];
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
       <Header />
 
       <ControlPanel
-        mode={mode} setMode={setMode}
-        n={n} setN={setN}
-        seed={seed} setSeed={setSeed}
         loading={loading}
-        onSynthetic={handleSynthetic}
         onUpload={handleUpload}
-        minFreq={minFreq} setMinFreq={setMinFreq}
+        onSample={handleSample}
+        minFreq={minFreq}
+        setMinFreq={setMinFreq}
       />
 
       {error && (
-        <div className="p-4 mb-6 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm whitespace-pre-wrap animate-fade-in">
+        <div className="p-3 mb-6 border border-red-200 bg-red-50 text-red-700 text-sm animate-in">
           {error}
         </div>
       )}
 
-      {mode === 'upload' && uploadTimeRange && view !== 'compare' && (
+      {uploadTimeRange && view !== 'compare' && (
         <TimeRangeSlider
           timeRange={uploadTimeRange}
           timeMin={timeMin} timeMax={timeMax}
@@ -194,7 +199,7 @@ export default function Home() {
         </div>
       )}
 
-      {mode === 'upload' && uploadTimeRange && view === 'compare' && (
+      {uploadTimeRange && view === 'compare' && (
         <CompareTimeRange
           timeRange={uploadTimeRange}
           timeMin={timeMin} timeMax={timeMax}
@@ -215,21 +220,21 @@ export default function Home() {
       {!loading && view === 'spanner' && result && <SpannerView result={result} />}
 
       {view === 'trends' && trendData && (
-        <div className="mb-8 animate-fade-in">
+        <div className="mb-8 animate-in">
           <TrendsView data={trendData} height={400} />
         </div>
       )}
 
       {view === 'explore' && (
-        <div className="mb-8 animate-fade-in">
+        <div className="mb-8 animate-in">
           <ExploreView fullGraph={uploadInfo?.graph || currentGraph} />
         </div>
       )}
 
       {view === 'compare' && compareData && <CompareResult data={compareData} />}
 
-      <footer className="text-xs text-text-muted/60 text-center mt-12 pt-6 border-t border-border">
-        Temporal Spanner Analyzer — Based on Balig&aacute;cs (2026) &quot;Temporal Cliques Admit Linear Spanners&quot;
+      <footer className="text-xs text-gray-400 text-center mt-12 pt-6 border-t border-border">
+        Baligacs (2026) &quot;Temporal Cliques Admit Linear Spanners&quot;
       </footer>
     </div>
   );
