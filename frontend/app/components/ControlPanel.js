@@ -4,6 +4,8 @@ import { useRef, useState } from 'react';
 
 export default function ControlPanel({
   loading, onUpload, minFreq, setMinFreq, onSample,
+  minCliqueSize, setMinCliqueSize, maxCliques, setMaxCliques,
+  showAdvanced, setShowAdvanced,
 }) {
   const fileRef = useRef(null);
   const [dragOver, setDragOver] = useState(false);
@@ -68,6 +70,13 @@ export default function ControlPanel({
           />
         </label>
 
+        <button
+          onClick={() => setShowAdvanced(!showAdvanced)}
+          className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
+        >
+          {showAdvanced ? 'Gelişmiş ▲' : 'Gelişmiş ▼'}
+        </button>
+
         {loading && (
           <span className="text-xs text-gray-400 flex items-center gap-1.5">
             <svg className="animate-spin w-3 h-3" viewBox="0 0 24 24">
@@ -78,6 +87,28 @@ export default function ControlPanel({
           </span>
         )}
       </div>
+
+      {showAdvanced && (
+        <div className="flex items-center gap-4 mt-2 ml-1 animate-in">
+          <label className="flex items-center gap-2 text-xs text-gray-500">
+            Min Klik Boyutu
+            <input
+              type="number" min={2} max={10} value={minCliqueSize}
+              onChange={e => setMinCliqueSize(Math.max(2, Number(e.target.value)))}
+              className="w-16 px-2 py-1.5 border border-gray-200 rounded text-xs bg-white"
+            />
+          </label>
+          <label className="flex items-center gap-2 text-xs text-gray-500">
+            Maks Klik
+            <input
+              type="number" min={0} max={5000} value={maxCliques}
+              onChange={e => setMaxCliques(Math.max(0, Number(e.target.value)))}
+              placeholder="0=sınırsız"
+              className="w-20 px-2 py-1.5 border border-gray-200 rounded text-xs bg-white"
+            />
+          </label>
+        </div>
+      )}
     </div>
   );
 }

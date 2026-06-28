@@ -32,6 +32,9 @@ export default function Home() {
   const [timeMax2, setTimeMax2] = useState(1);
   const [compareData, setCompareData] = useState(null);
   const [compareLoading, setCompareLoading] = useState(false);
+  const [minCliqueSize, setMinCliqueSize] = useState(3);
+  const [maxCliques, setMaxCliques] = useState(0);
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const debounceRef = useRef(null);
 
   const uploadTimeRange = useMemo(() => {
@@ -53,13 +56,13 @@ export default function Home() {
     if (!graph || graph.vertices.length < 2) { setResult(null); return; }
     setLoading(true); setError(null);
     try {
-      setResult(await computeSpanner(graph));
+      setResult(await computeSpanner(graph, { minCliqueSize, maxCliques }));
     } catch (e) {
       setError(e.message);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [minCliqueSize, maxCliques]);
 
   const doTrends = useCallback(async (graph) => {
     if (!graph || graph.edges.length === 0) { setTrendData(null); return; }
@@ -168,13 +171,19 @@ export default function Home() {
         <div className="flex-1 min-w-0">
           <Header />
 
-          <ControlPanel
-            loading={loading}
-            onUpload={handleUpload}
-            onSample={handleSample}
-            minFreq={minFreq}
-            setMinFreq={setMinFreq}
-          />
+      <ControlPanel
+        loading={loading}
+        onUpload={handleUpload}
+        onSample={handleSample}
+        minFreq={minFreq}
+        setMinFreq={setMinFreq}
+        minCliqueSize={minCliqueSize}
+        setMinCliqueSize={setMinCliqueSize}
+        maxCliques={maxCliques}
+        setMaxCliques={setMaxCliques}
+        showAdvanced={showAdvanced}
+        setShowAdvanced={setShowAdvanced}
+      />
 
           {error && (
             <div className="p-3 mb-6 border border-red-200 bg-red-50 text-red-700 text-sm animate-in">

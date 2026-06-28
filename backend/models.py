@@ -15,6 +15,9 @@ class GraphSchema(BaseModel):
 
 class SpannerRequest(BaseModel):
     graph: GraphSchema
+    min_clique_size: int = 3
+    max_cliques: int = 0
+    pmi_threshold: float = 0.0
 
 
 class CliqueQualitySchema(BaseModel):

@@ -101,7 +101,7 @@ def compute_spanner(req: SpannerRequest) -> SpannerResponse:
         )
 
     lbl, max_label, cliques, all_spanner_edges, clique_qualities, edges_covered, clique_pairs = (
-        compute_spanner_pipeline(req.graph)
+        compute_spanner_pipeline(req.graph, min_clique_size=req.min_clique_size, max_cliques=req.max_cliques)
     )
 
     uploaded_count = len(req.graph.edges)

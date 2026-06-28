@@ -21,8 +21,12 @@ async function upload(path, formData) {
   return res.json();
 }
 
-export function computeSpanner(graph) {
-  return post('/api/spanner', { graph });
+export function computeSpanner(graph, opts = {}) {
+  return post('/api/spanner', {
+    graph,
+    min_clique_size: opts.minCliqueSize || 3,
+    max_cliques: opts.maxCliques || 0,
+  });
 }
 
 export function computeTrends(graph, windows = 10) {

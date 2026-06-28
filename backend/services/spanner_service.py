@@ -68,6 +68,8 @@ def _process_clique(
 
 def compute_spanner_pipeline(
     graph: GraphSchema,
+    min_clique_size: int = 3,
+    max_cliques: int = 0,
 ) -> tuple[
     dict[tuple[str, str], float],
     float,
@@ -80,13 +82,18 @@ def compute_spanner_pipeline(
     lbl, max_label = _build_label_dict(graph)
 
     adj = build_static_adj(graph)
-    cliques = maximal_cliques(adj, min_size=3)
+    cliques = maximal_cliques(adj, min_size=min_clique_size)
+
+    if max_cliques > 0 and len(cliques) > max_cliques:
+        cliques = sorted(cliques, key=len, reverse=True)[:max_cliques]
+    else:
+        cliques = sorted(cliques, key=len, reverse=True)
 
     all_spanner_edges: set[tuple[str, str]] = set()
     clique_pairs: set[tuple[str, str]] = set()
     clique_qualities: list[CliqueQualitySchema] = []
 
-    for clique in sorted(cliques, key=len, reverse=True):
+    for clique in cliques:
         cq = _process_clique(clique, lbl, all_spanner_edges, clique_pairs)
         clique_qualities.append(cq)
 
