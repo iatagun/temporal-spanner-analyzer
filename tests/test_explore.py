@@ -18,8 +18,8 @@ def test_check_clique_true():
     assert r.status_code == 200
     d = r.json()
     assert d["is_clique"] is True
-    assert d["total_pairs"] == 1
-    assert len(d["missing_pairs"]) == 0
+    assert d["expected_edges"] == 1
+    assert d["missing_edges"] is None
 
 
 def test_check_clique_false():
@@ -31,8 +31,8 @@ def test_check_clique_false():
     assert r.status_code == 200
     d = r.json()
     assert d["is_clique"] is False
-    assert len(d["missing_pairs"]) == 1
-    assert d["missing_pairs"][0] == ["a", "c"]
+    assert len(d["missing_edges"]) == 1
+    assert d["missing_edges"][0] == ["a", "c"]
 
 
 def test_word_cliques():
@@ -48,4 +48,5 @@ def test_word_cliques():
     assert r.status_code == 200
     d = r.json()
     assert d["word"] == "a"
-    assert "snapshots" in d
+    assert "cliques" in d
+    assert d["total_snapshots"] > 0
