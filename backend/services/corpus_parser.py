@@ -6,6 +6,7 @@ from pathlib import Path
 
 
 def _detect_date_from_filename(filename: str) -> str | None:
+    base = Path(filename).stem
     patterns = [
         (r"(\d{4}[-_]\d{2}[-_]\d{2})", "%Y-%m-%d"),
         (r"(\d{4}[-_]\d{2})", "%Y-%m"),
@@ -14,7 +15,7 @@ def _detect_date_from_filename(filename: str) -> str | None:
         (r"(\d{4})", "%Y"),
     ]
     for pattern, fmt in patterns:
-        m = re.search(pattern, filename)
+        m = re.search(pattern, base)
         if m:
             try:
                 dt = datetime.strptime(m.group(1), fmt)

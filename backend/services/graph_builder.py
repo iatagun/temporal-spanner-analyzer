@@ -89,11 +89,19 @@ def parse_label(raw: Any) -> float:
     if isinstance(raw, (int, float)):
         return float(raw)
     raw = str(raw).strip()
+
+    if raw.isdigit() and len(raw) == 4:
+        try:
+            return datetime.strptime(raw, "%Y").timestamp()
+        except ValueError:
+            pass
+
     try:
         return float(raw)
     except ValueError:
         pass
-    for fmt in ("%Y-%m-%d", "%Y-%m-%d %H:%M:%S", "%d.%m.%Y", "%d/%m/%Y"):
+
+    for fmt in ("%Y-%m-%d", "%Y-%m-%d %H:%M:%S", "%Y-%m", "%d.%m.%Y", "%d/%m/%Y"):
         try:
             return datetime.strptime(raw, fmt).timestamp()
         except ValueError:
