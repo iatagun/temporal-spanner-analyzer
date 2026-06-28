@@ -3,6 +3,7 @@
 
 > Bu döküman, projeye sıfırdan hakim olmak isteyen bir yazılımcı için yazılmıştır.
 > **Hedef**: Her matematiksel sembolü, her formülü ve her kod dosyasını "4 işlem" düzeyinde anlamak.
+> **Sürüm**: Haziran 2026 — CoNLL-U/VRT desteği, Tailwind CSS, 37 test ile güncellendi.
 
 ---
 

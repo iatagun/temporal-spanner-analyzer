@@ -1,7 +1,9 @@
 # Temporal Spanner Analyzer — Teknik Şartname
 
-**Sürüm:** 1.0
-**Tarih:** 2026
+**Sürüm:** 1.1
+**Tarih:** Haziran 2026
+**Durum:** Tamamlandı, canlı
+**Canlı:** https://frontend-teal-iota-ee3dg8j6wx.vercel.app
 **Dayanak:** Baligács (2026), *Temporal Cliques Admit Linear Spanners*, arXiv:2606.05156
 
 ---
@@ -18,7 +20,7 @@ Zaman etiketli metin verisindeki kelime birlikteliklerini PMI ağırlıklı bir 
 
 | # | Modül | Açıklama |
 |---|-------|----------|
-| 1 | Veri Alımı | CSV/JSON dosyalarından zaman etiketli metin verisini ayrıştırma |
+| 1 | Veri Alımı | CSV/JSON/CoNLL-U/VRT dosyalarından zaman etiketli metin verisini ayrıştırma |
 | 2 | Çizge Oluşturma | PMI (Pointwise Mutual Information) metriği ile kelime birliktelik çizgesi inşaası |
 | 3 | Maksimal Clique Tespiti | Bron–Kerbosch algoritması ile 3+ düğümlü maksimal clique'lerin bulunması |
 | 4 | Spanner Algoritması | Baligács (2026) Lemma 4-17, Theorem 18-20 implementasyonu |
@@ -49,6 +51,8 @@ Zaman etiketli metin verisindeki kelime birlikteliklerini PMI ağırlıklı bir 
 | FastAPI | ≥0.115 | REST API framework |
 | Uvicorn | ≥0.34 | ASGI sunucu |
 | Pydantic | ≥2.0 | Veri doğrulama ve modelleme |
+| python-dotenv | ≥1.0 | .env dosyası yükleme |
+| python-multipart | ≥0.0.20 | Dosya yükleme desteği |
 
 ### 3.2 Frontend
 
@@ -57,6 +61,7 @@ Zaman etiketli metin verisindeki kelime birlikteliklerini PMI ağırlıklı bir 
 | Node.js | ≥22 | Çalışma zamanı |
 | Next.js | 16.2.7 | React framework (App Router) |
 | React | 19.2.4 | UI kütüphanesi |
+| Tailwind CSS | 4.3 | Stil framework'ü |
 | Cytoscape.js | ≥3.31 | Çizge görselleştirme |
 | D3.js | 7.9.0 | Trend grafikleri (Gantt + çizgi) |
 

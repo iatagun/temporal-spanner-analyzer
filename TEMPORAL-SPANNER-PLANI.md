@@ -2,6 +2,12 @@
 
 **Dayanak**: Baligács (2026), *Temporal Cliques Admit Linear Spanners*, arXiv:2606.05156
 
+> **Mevcut Durum (Haziran 2026)**: Tüm aşamalar tamamlandı. Canlı: https://frontend-teal-iota-ee3dg8j6wx.vercel.app
+> - Aşama 0-3: ✓ Tamamlandı
+> - 37 test, %100 geçiyor
+> - CoNLL-U / VRT / CSV / JSON desteği
+> - Tailwind CSS, 3-sütun layout, örnek veri, deployment (Vercel + Render)
+
 > **Temel Fikir**: Zaman etiketli metin verisindeki kelime birlikteliklerini bir ağ (graph) olarak modelleyip, bu ağı **temporal clique → linear spanner** dönüşümüyle seyrelterek zamansal dilbilimsel trendleri keşfetmek.
 
 ---

@@ -1,94 +1,120 @@
 # Temporal Spanner Analyzer
 
-Baligács (2026) **Temporal Cliques Admit Linear Spanners** teoreminin interaktif web uygulaması.
+Baligács (2026) **Temporal Cliques Admit Linear Spanners** (arXiv:2606.05156) teoreminin
+çalışan implementasyonu ve interaktif web aracı.
 
-Zaman etiketli metin verisindeki kelime birlikteliklerini temporal clique → linear spanner dönüşümüyle seyrelterek zamansal dilbilimsel trendleri keşfedin.
+Derlem dilbilimcileri için tasarlanmıştır: zaman etiketli metin verisindeki kelime
+birlikteliklerini temporal klike dönüştürür, ≤ 7n kenarlı lineer spanner ile seyreltir,
+kavram kümelerinin doğum, büyüme ve kayboluş süreçlerini görünür kılar.
+
+**Canlı:** https://frontend-teal-iota-ee3dg8j6wx.vercel.app
+**API:** https://temporal-spanner-api.onrender.com
 
 ## Özellikler
 
-- **Spanner Hesaplama**: CSV yükle veya sentetik graf oluştur, O(n²) → O(7n) kenar azaltımını gör
-- **Trend Dedektörü**: Clique'lerin zaman içinde doğum/büyüme/küçülme/ölümünü Gantt şemasında izle
-- **Karşılaştırma**: İki farklı zaman diliminin spanner'larını yan yana karşılaştır
-- **Keşif Araçları**: Bir kelimenin hangi cliquelerde olduğunu sorgula, kelime setlerinin temporal clique olup olmadığını kontrol et
-- **Canlı Zaman Kaydırma**: Slider'ı oynatınca spanner otomatik güncellenir
+- **Çoklu Format Desteği**: CSV, JSON, CoNLL-U (.conllu), VRT (.vrt)
+- **Spanner**: Orijinal çizgeyi ≤ 7n kenara indirir, tüm zamansal yolları korur
+- **Trendler**: Kliklerin zaman içinde doğum/büyüme/ölümünü Gantt + çizgi grafiğinde izle
+- **Karşılaştırma**: İki zaman dilimini yan yana analiz
+- **Keşif**: Kelime bazlı klik sorgulama, kelime kümesi klik doğrulaması
+- **Canlı Zaman Kaydırma**: Slider ile spanner otomatik güncellenir
+- **Örnek Veri**: Tek tıkla Türkçe yapay zekâ terimleri derlemi (2020-2024)
 
 ## Hızlı Başlangıç
 
 ```bash
-# Backend
-cd backend
-pip install -r requirements.txt
-python main.py
+# Backend (port 8000)
+python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000
 
-# Frontend (ayrı terminal)
-cd frontend
-npm install
-npm run dev
+# Frontend (port 3004, ayrı terminal)
+cd frontend && npm run dev
 ```
 
-Frontend: http://localhost:3000
-Backend API: http://127.0.0.1:8000/docs
+Tarayıcı: http://localhost:3004 — "Örnek Veri ile Dene" ile hemen test edin.
 
-### Docker ile
+### Docker
 
 ```bash
 docker compose up --build
 ```
 
-## Kullanım
+## Desteklenen Formatlar
 
-1. **CSV Yükle**: `tarih,kelimeler` formatında CSV dosyanızı yükleyin
-2. **Zaman Aralığı Seç**: Slider ile ilgilendiğiniz dönemi belirleyin
-3. **Min Frekans**: Seyrek geçen kelimeleri filtreleyin (opsiyonel)
-4. **Spanner Hesapla**: Orijinal ağ ile spanner'ı karşılaştırın
-5. **Trendler**: Clique evrimini zaman çizelgesinde izleyin
-6. **Karşılaştır**: İki farklı dönemi yan yana karşılaştırın
-7. **Keşfet**: Kelime sorgulama ve clique kontrolü yapın
+### CoNLL-U (.conllu)
+```
+# date = 2020-01-15
+1	yapay	yapay	ADJ
+2	zekâ	zekâ	NOUN
+3	öğrenme	öğrenme	NOUN
+```
+Sütun 2 (FORM) veya 3 (LEMMA) okunur. `# date =` satırı zamanı belirler.
+Dosya adından da tarih çıkarılabilir (örn. `2020-01-15_corpus.conllu`).
 
-### CSV Formatı
-
+### CSV
 ```csv
-tarih,kaynak,kelimeler
-2020-01-05,haber1,"yapay,zekâ,teknoloji,gelecek"
-2020-03-12,haber2,"yapay,zekâ,makine,öğrenme"
+date,words
+2020-01-15,"yapay,zekâ,öğrenme"
+2020-06-10,"doğal,dil,işleme"
 ```
 
-### API Endpoints
+### JSON
+```json
+[
+  {"date": "2020-01-15", "words": ["yapay", "zekâ"]},
+  {"date": "2020-06-10", "words": ["doğal", "dil"]}
+]
+```
+
+### VRT (.vrt)
+```xml
+<text date="2020-01-15">
+yapay	ADJ
+zekâ	NOUN
+</text>
+```
+
+## API
 
 | Metot | Route | Açıklama |
 |-------|-------|----------|
-| POST | `/api/spanner` | Temporal clique spanner'ı hesapla |
-| POST | `/api/upload` | CSV yükle |
+| POST | `/api/spanner` | Spanner hesapla |
+| POST | `/api/upload` | Dosya yükle (CSV/JSON/CoNLL-U/VRT) |
+| POST | `/api/trends` | Klik evrim trendleri |
+| POST | `/api/compare` | İki çizge karşılaştırması |
+| POST | `/api/word-cliques` | Kelimenin klik üyelikleri |
+| POST | `/api/check-clique` | Kelime kümesi klik kontrolü |
 | POST | `/api/export` | JSON/CSV/GraphML dışa aktar |
-| POST | `/api/trends` | Clique evrim trendleri |
-| POST | `/api/compare` | İki graf karşılaştırması |
-| POST | `/api/word-cliques` | Kelimenin clique üyelikleri |
-| POST | `/api/check-clique` | Kelime setinin clique kontrolü |
 | GET | `/api/health` | Sağlık kontrolü |
-
-## Ekran Görüntüleri
-
-| Spanner Görünümü | Trend Görünümü |
-|:---:|:---:|
-| ![Spanner](screenshots/spanner-view.png) | ![Trends](screenshots/trends-view.png) |
-| Orijinal ağ (sol) ve seyreltilmiş spanner (sağ) | Clique'lerin zaman içindeki evrimi |
-
-| Karşılaştırma Görünümü | Keşif Görünümü |
-|:---:|:---:|
-| ![Compare](screenshots/compare-view.png) | ![Explore](screenshots/explore-view.png) |
-| İki dönem arası spanner karşılaştırması | Kelime sorgulama ve clique kontrolü |
 
 ## Mimari
 
-- **Backend**: Python 3.13 + FastAPI
-- **Frontend**: Next.js 16 + React 19 + D3.js + Cytoscape.js
-- **Algoritma**: `backend/algorithm/` — Baligács makalesinin Lemma/Theorem bazlı implementasyonu
+```
+frontend/               Next.js 16 + React 19 + Tailwind CSS + Cytoscape.js + D3.js
+backend/
+  routers/              FastAPI endpoint'leri
+  services/             PMI çizge inşası, Bron–Kerbosch, trend analizi, derlem ayrıştırıcı
+  algorithm/            Baligács (2026) Lemma/Theorem implementasyonu
+spanner/                Saf Python algoritma kütüphanesi (types, core, verify)
+tests/                  37 test (pytest)
+```
 
-## Teori
+## Algoritma
 
-Her temporal clique (zaman etiketli tam graf), **7n** kenarlı bir spanner'a (seyreltik alt graf) sahiptir.
-Bu spanner, orijinal graftaki herhangi iki düğüm arasında zamansal olarak geçerli bir yol bulunmasını garanti eder.
-Detaylar: `TEMPORAL-SPANNER-PLANI.md`
+Baligács (2026) her temporal klik için ≤ 7n kenarlı bir spanner inşa eder:
 
-python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000
-npm run dev
+1. **{1,2}-hop dismountability** — 2-4 kenarla servis edilebilen düğümleri çıkar
+2. **V⁻/V⁺ bölümleme** (Theorem 20) — doğrudan EM bi-clique, ≤ 7n
+3. **Lemma 17 özyineleme** — simple/extended star'lar ile böl, ≤ 6n/seviye, log n derinlik
+4. **Toplam**: f(n) ≤ 7n (asimptotik optimal — alt sınır 2n-4)
+
+## Deployment
+
+- **Frontend**: Vercel (ücretsiz)
+- **Backend**: Render (ücretsiz, 750 saat/ay)
+- **Konfigürasyon**: `vercel.json`, `render.yaml`, `docker-compose.yml`
+
+## Test
+
+```bash
+python -m pytest tests/ -v    # 37 test
+```
