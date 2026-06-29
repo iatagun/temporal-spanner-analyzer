@@ -1,0 +1,1491 @@
+# sample.conllu — Olcek testi (200 cumle, 2010-2025)
+
+# date = 2010-11-04
+1	inovasyon	inovasyon	NOUN
+2	coklu	coklu	NOUN
+3	metin	metin	NOUN
+
+# date = 2010-04-05
+1	isleme	isleme	NOUN
+2	teknoloji	teknoloji	NOUN
+3	inovasyon	inovasyon	NOUN
+4	iklim	iklim	NOUN
+5	dil	dil	NOUN
+6	egitim	egitim	NOUN
+7	duzenleme	duzenleme	NOUN
+8	derin	derin	NOUN
+
+# date = 2010-01-03
+1	uretim	uretim	NOUN
+2	ekonomi	ekonomi	NOUN
+3	hukuk	hukuk	NOUN
+4	zeka	zeka	NOUN
+
+# date = 2010-09-07
+1	tarim	tarim	NOUN
+2	bilim	bilim	NOUN
+3	iklim	iklim	NOUN
+4	etik	etik	NOUN
+5	uretim	uretim	NOUN
+6	acik	acik	NOUN
+7	egitim	egitim	NOUN
+8	coklu	coklu	NOUN
+
+# date = 2010-01-25
+1	bilim	bilim	NOUN
+2	duzenleme	duzenleme	NOUN
+3	arama	arama	NOUN
+4	coklu	coklu	NOUN
+
+# date = 2010-03-07
+1	isleme	isleme	NOUN
+2	dil	dil	NOUN
+3	planlama	planlama	NOUN
+4	otonom	otonom	NOUN
+5	hukuk	hukuk	NOUN
+
+# date = 2010-05-26
+1	gelistirme	gelistirme	NOUN
+2	kaynak	kaynak	NOUN
+3	iklim	iklim	NOUN
+
+# date = 2010-02-13
+1	cevre	cevre	NOUN
+2	modal	modal	NOUN
+3	ulasim	ulasim	NOUN
+
+# date = 2010-10-28
+1	politika	politika	NOUN
+2	makine	makine	NOUN
+3	arastirma	arastirma	NOUN
+4	dogal	dogal	NOUN
+5	derin	derin	NOUN
+
+# date = 2010-11-08
+1	dil	dil	NOUN
+2	uretim	uretim	NOUN
+3	isleme	isleme	NOUN
+4	planlama	planlama	NOUN
+5	coklu	coklu	NOUN
+
+# date = 2010-08-21
+1	sinir	sinir	NOUN
+2	ajan	ajan	NOUN
+3	otonom	otonom	NOUN
+4	goruntu	goruntu	NOUN
+5	finans	finans	NOUN
+
+# date = 2010-05-23
+1	tarim	tarim	NOUN
+2	dogal	dogal	NOUN
+3	hukuk	hukuk	NOUN
+4	ulasim	ulasim	NOUN
+5	sinir	sinir	NOUN
+6	iklim	iklim	NOUN
+7	gelistirme	gelistirme	NOUN
+8	metin	metin	NOUN
+
+# date = 2010-03-15
+1	coklu	coklu	NOUN
+2	ulasim	ulasim	NOUN
+3	bilim	bilim	NOUN
+4	cevre	cevre	NOUN
+5	uretim	uretim	NOUN
+6	teknoloji	teknoloji	NOUN
+
+# date = 2010-06-27
+1	uretim	uretim	NOUN
+2	kultur	kultur	NOUN
+3	derin	derin	NOUN
+
+# date = 2011-06-13
+1	dogal	dogal	NOUN
+2	goruntu	goruntu	NOUN
+3	politika	politika	NOUN
+4	arastirma	arastirma	NOUN
+5	tabani	tabani	NOUN
+
+# date = 2011-04-21
+1	guvenlik	guvenlik	NOUN
+2	tarim	tarim	NOUN
+3	kaynak	kaynak	NOUN
+4	modeli	modeli	NOUN
+5	donusturucu	donusturucu	NOUN
+6	veri	veri	NOUN
+
+# date = 2011-04-24
+1	iklim	iklim	NOUN
+2	donusturucu	donusturucu	NOUN
+3	inovasyon	inovasyon	NOUN
+4	egitim	egitim	NOUN
+5	duzenleme	duzenleme	NOUN
+6	surdurulebilir	surdurulebilir	NOUN
+7	guvenlik	guvenlik	NOUN
+
+# date = 2011-06-08
+1	ekonomi	ekonomi	NOUN
+2	saglk	saglk	NOUN
+3	dil	dil	NOUN
+4	donusum	donusum	NOUN
+
+# date = 2011-01-28
+1	modeli	modeli	NOUN
+2	ulasim	ulasim	NOUN
+3	sinir	sinir	NOUN
+
+# date = 2011-11-14
+1	dogal	dogal	NOUN
+2	planlama	planlama	NOUN
+3	toplum	toplum	NOUN
+4	hukuk	hukuk	NOUN
+5	kaynak	kaynak	NOUN
+6	enerji	enerji	NOUN
+7	donusturucu	donusturucu	NOUN
+
+# date = 2011-09-28
+1	teknoloji	teknoloji	NOUN
+2	gelistirme	gelistirme	NOUN
+3	buyuk	buyuk	NOUN
+
+# date = 2011-11-18
+1	surdurulebilir	surdurulebilir	NOUN
+2	tarim	tarim	NOUN
+3	arama	arama	NOUN
+4	buyuk	buyuk	NOUN
+5	modal	modal	NOUN
+
+# date = 2011-07-06
+1	yapay	yapay	NOUN
+2	gelistirme	gelistirme	NOUN
+3	toplum	toplum	NOUN
+4	donusturucu	donusturucu	NOUN
+5	ekonomi	ekonomi	NOUN
+6	agi	agi	NOUN
+
+# date = 2011-09-04
+1	vektor	vektor	NOUN
+2	ulasim	ulasim	NOUN
+3	ekonomi	ekonomi	NOUN
+4	hukuk	hukuk	NOUN
+5	makine	makine	NOUN
+6	modeli	modeli	NOUN
+7	ajan	ajan	NOUN
+8	sinir	sinir	NOUN
+
+# date = 2011-09-25
+1	yapay	yapay	NOUN
+2	hukuk	hukuk	NOUN
+3	tabani	tabani	NOUN
+4	saglk	saglk	NOUN
+5	zeka	zeka	NOUN
+6	buyuk	buyuk	NOUN
+7	ajan	ajan	NOUN
+
+# date = 2011-05-08
+1	metin	metin	NOUN
+2	politika	politika	NOUN
+3	dil	dil	NOUN
+
+# date = 2011-02-24
+1	kultur	kultur	NOUN
+2	dogal	dogal	NOUN
+3	donusum	donusum	NOUN
+4	iklim	iklim	NOUN
+5	veri	veri	NOUN
+6	dijital	dijital	NOUN
+
+# date = 2012-11-16
+1	sinir	sinir	NOUN
+2	donusturucu	donusturucu	NOUN
+3	enerji	enerji	NOUN
+4	hukuk	hukuk	NOUN
+5	duzenleme	duzenleme	NOUN
+6	goruntu	goruntu	NOUN
+7	iklim	iklim	NOUN
+
+# date = 2012-12-23
+1	arastirma	arastirma	NOUN
+2	vektor	vektor	NOUN
+3	guvenlik	guvenlik	NOUN
+4	finans	finans	NOUN
+
+# date = 2012-11-12
+1	enerji	enerji	NOUN
+2	acik	acik	NOUN
+3	buyuk	buyuk	NOUN
+4	metin	metin	NOUN
+5	uretim	uretim	NOUN
+6	dogal	dogal	NOUN
+
+# date = 2012-06-01
+1	cevre	cevre	NOUN
+2	uretim	uretim	NOUN
+3	egitim	egitim	NOUN
+4	toplum	toplum	NOUN
+5	yapay	yapay	NOUN
+6	dogal	dogal	NOUN
+7	arastirma	arastirma	NOUN
+
+# date = 2012-11-02
+1	dogal	dogal	NOUN
+2	derin	derin	NOUN
+3	arama	arama	NOUN
+4	ekonomi	ekonomi	NOUN
+
+# date = 2012-04-09
+1	saglk	saglk	NOUN
+2	goruntu	goruntu	NOUN
+3	iklim	iklim	NOUN
+4	veri	veri	NOUN
+5	gelistirme	gelistirme	NOUN
+6	politika	politika	NOUN
+7	inovasyon	inovasyon	NOUN
+8	egitim	egitim	NOUN
+
+# date = 2012-04-26
+1	toplum	toplum	NOUN
+2	etik	etik	NOUN
+3	makine	makine	NOUN
+4	isleme	isleme	NOUN
+5	surdurulebilir	surdurulebilir	NOUN
+6	finans	finans	NOUN
+
+# date = 2012-07-12
+1	etik	etik	NOUN
+2	kaynak	kaynak	NOUN
+3	gelistirme	gelistirme	NOUN
+4	ogrenme	ogrenme	NOUN
+5	teknoloji	teknoloji	NOUN
+6	tarim	tarim	NOUN
+
+# date = 2012-11-04
+1	guvenlik	guvenlik	NOUN
+2	gelistirme	gelistirme	NOUN
+3	arama	arama	NOUN
+
+# date = 2012-02-08
+1	makine	makine	NOUN
+2	iklim	iklim	NOUN
+3	acik	acik	NOUN
+4	veri	veri	NOUN
+
+# date = 2012-07-06
+1	kaynak	kaynak	NOUN
+2	metin	metin	NOUN
+3	dogal	dogal	NOUN
+4	acik	acik	NOUN
+5	toplum	toplum	NOUN
+
+# date = 2012-09-04
+1	tarim	tarim	NOUN
+2	iklim	iklim	NOUN
+3	yapay	yapay	NOUN
+
+# date = 2012-02-25
+1	sinir	sinir	NOUN
+2	etik	etik	NOUN
+3	saglk	saglk	NOUN
+4	egitim	egitim	NOUN
+
+# date = 2013-04-28
+1	ogrenme	ogrenme	NOUN
+2	sinir	sinir	NOUN
+3	planlama	planlama	NOUN
+4	yapay	yapay	NOUN
+5	dijital	dijital	NOUN
+6	donusturucu	donusturucu	NOUN
+
+# date = 2013-08-10
+1	bilim	bilim	NOUN
+2	gelistirme	gelistirme	NOUN
+3	dijital	dijital	NOUN
+4	cevre	cevre	NOUN
+5	finans	finans	NOUN
+6	arastirma	arastirma	NOUN
+
+# date = 2013-08-05
+1	modal	modal	NOUN
+2	goruntu	goruntu	NOUN
+3	ogrenme	ogrenme	NOUN
+4	egitim	egitim	NOUN
+
+# date = 2013-12-18
+1	inovasyon	inovasyon	NOUN
+2	tabani	tabani	NOUN
+3	ogrenme	ogrenme	NOUN
+
+# date = 2013-01-19
+1	ekonomi	ekonomi	NOUN
+2	enerji	enerji	NOUN
+3	sinir	sinir	NOUN
+4	ogrenme	ogrenme	NOUN
+5	kultur	kultur	NOUN
+6	dil	dil	NOUN
+
+# date = 2013-03-03
+1	dogal	dogal	NOUN
+2	teknoloji	teknoloji	NOUN
+3	metin	metin	NOUN
+4	guvenlik	guvenlik	NOUN
+5	buyuk	buyuk	NOUN
+6	politika	politika	NOUN
+7	dijital	dijital	NOUN
+
+# date = 2013-10-20
+1	savunma	savunma	NOUN
+2	dil	dil	NOUN
+3	etik	etik	NOUN
+
+# date = 2013-11-19
+1	enerji	enerji	NOUN
+2	tabani	tabani	NOUN
+3	donusturucu	donusturucu	NOUN
+4	goruntu	goruntu	NOUN
+5	finans	finans	NOUN
+6	arastirma	arastirma	NOUN
+7	toplum	toplum	NOUN
+
+# date = 2013-04-09
+1	veri	veri	NOUN
+2	finans	finans	NOUN
+3	tarim	tarim	NOUN
+4	vektor	vektor	NOUN
+5	kaynak	kaynak	NOUN
+6	tabani	tabani	NOUN
+
+# date = 2013-02-01
+1	savunma	savunma	NOUN
+2	politika	politika	NOUN
+3	isleme	isleme	NOUN
+4	dogal	dogal	NOUN
+5	iklim	iklim	NOUN
+6	goruntu	goruntu	NOUN
+
+# date = 2013-09-09
+1	otonom	otonom	NOUN
+2	dogal	dogal	NOUN
+3	metin	metin	NOUN
+4	ajan	ajan	NOUN
+
+# date = 2013-05-06
+1	iklim	iklim	NOUN
+2	arastirma	arastirma	NOUN
+3	vektor	vektor	NOUN
+4	savunma	savunma	NOUN
+5	tarim	tarim	NOUN
+6	enerji	enerji	NOUN
+
+# date = 2013-01-22
+1	vektor	vektor	NOUN
+2	finans	finans	NOUN
+3	isleme	isleme	NOUN
+4	veri	veri	NOUN
+5	donusturucu	donusturucu	NOUN
+6	buyuk	buyuk	NOUN
+7	dijital	dijital	NOUN
+
+# date = 2013-12-18
+1	coklu	coklu	NOUN
+2	modal	modal	NOUN
+3	hukuk	hukuk	NOUN
+4	goruntu	goruntu	NOUN
+
+# date = 2014-12-11
+1	teknoloji	teknoloji	NOUN
+2	ulasim	ulasim	NOUN
+3	donusturucu	donusturucu	NOUN
+4	ekonomi	ekonomi	NOUN
+
+# date = 2014-08-09
+1	dil	dil	NOUN
+2	ulasim	ulasim	NOUN
+3	duzenleme	duzenleme	NOUN
+
+# date = 2014-05-02
+1	arama	arama	NOUN
+2	surdurulebilir	surdurulebilir	NOUN
+3	veri	veri	NOUN
+
+# date = 2014-11-09
+1	inovasyon	inovasyon	NOUN
+2	acik	acik	NOUN
+3	cevre	cevre	NOUN
+4	arastirma	arastirma	NOUN
+
+# date = 2014-07-18
+1	buyuk	buyuk	NOUN
+2	dogal	dogal	NOUN
+3	bilim	bilim	NOUN
+
+# date = 2014-03-18
+1	ajan	ajan	NOUN
+2	egitim	egitim	NOUN
+3	cevre	cevre	NOUN
+
+# date = 2014-03-14
+1	derin	derin	NOUN
+2	vektor	vektor	NOUN
+3	ajan	ajan	NOUN
+4	dijital	dijital	NOUN
+
+# date = 2014-01-12
+1	teknoloji	teknoloji	NOUN
+2	metin	metin	NOUN
+3	finans	finans	NOUN
+4	isleme	isleme	NOUN
+
+# date = 2014-06-25
+1	etik	etik	NOUN
+2	savunma	savunma	NOUN
+3	inovasyon	inovasyon	NOUN
+4	modeli	modeli	NOUN
+5	metin	metin	NOUN
+6	sinir	sinir	NOUN
+7	agi	agi	NOUN
+
+# date = 2014-07-01
+1	inovasyon	inovasyon	NOUN
+2	arama	arama	NOUN
+3	dijital	dijital	NOUN
+4	etik	etik	NOUN
+
+# date = 2014-11-28
+1	toplum	toplum	NOUN
+2	metin	metin	NOUN
+3	coklu	coklu	NOUN
+4	sinir	sinir	NOUN
+5	bilim	bilim	NOUN
+6	isleme	isleme	NOUN
+7	planlama	planlama	NOUN
+8	derin	derin	NOUN
+
+# date = 2014-08-08
+1	kultur	kultur	NOUN
+2	kaynak	kaynak	NOUN
+3	otonom	otonom	NOUN
+4	vektor	vektor	NOUN
+
+# date = 2014-04-08
+1	finans	finans	NOUN
+2	makine	makine	NOUN
+3	guvenlik	guvenlik	NOUN
+
+# date = 2015-06-09
+1	surdurulebilir	surdurulebilir	NOUN
+2	coklu	coklu	NOUN
+3	otonom	otonom	NOUN
+
+# date = 2015-11-17
+1	teknoloji	teknoloji	NOUN
+2	iklim	iklim	NOUN
+3	arama	arama	NOUN
+4	zeka	zeka	NOUN
+5	buyuk	buyuk	NOUN
+6	donusturucu	donusturucu	NOUN
+
+# date = 2015-03-19
+1	derin	derin	NOUN
+2	isleme	isleme	NOUN
+3	hukuk	hukuk	NOUN
+4	duzenleme	duzenleme	NOUN
+5	otonom	otonom	NOUN
+
+# date = 2015-12-26
+1	duzenleme	duzenleme	NOUN
+2	hukuk	hukuk	NOUN
+3	ekonomi	ekonomi	NOUN
+4	buyuk	buyuk	NOUN
+5	planlama	planlama	NOUN
+
+# date = 2015-10-07
+1	derin	derin	NOUN
+2	arastirma	arastirma	NOUN
+3	duzenleme	duzenleme	NOUN
+4	yapay	yapay	NOUN
+5	enerji	enerji	NOUN
+
+# date = 2015-09-22
+1	inovasyon	inovasyon	NOUN
+2	kultur	kultur	NOUN
+3	finans	finans	NOUN
+4	makine	makine	NOUN
+5	ajan	ajan	NOUN
+6	duzenleme	duzenleme	NOUN
+7	dogal	dogal	NOUN
+8	dijital	dijital	NOUN
+
+# date = 2015-06-20
+1	finans	finans	NOUN
+2	buyuk	buyuk	NOUN
+3	gelistirme	gelistirme	NOUN
+4	vektor	vektor	NOUN
+5	ekonomi	ekonomi	NOUN
+
+# date = 2015-05-22
+1	tabani	tabani	NOUN
+2	guvenlik	guvenlik	NOUN
+3	bilim	bilim	NOUN
+4	modal	modal	NOUN
+5	cevre	cevre	NOUN
+6	veri	veri	NOUN
+
+# date = 2015-04-14
+1	planlama	planlama	NOUN
+2	teknoloji	teknoloji	NOUN
+3	inovasyon	inovasyon	NOUN
+4	agi	agi	NOUN
+5	savunma	savunma	NOUN
+6	politika	politika	NOUN
+7	vektor	vektor	NOUN
+8	guvenlik	guvenlik	NOUN
+
+# date = 2015-09-27
+1	vektor	vektor	NOUN
+2	modal	modal	NOUN
+3	goruntu	goruntu	NOUN
+
+# date = 2015-07-26
+1	hukuk	hukuk	NOUN
+2	tarim	tarim	NOUN
+3	tabani	tabani	NOUN
+4	kaynak	kaynak	NOUN
+5	acik	acik	NOUN
+6	donusum	donusum	NOUN
+7	teknoloji	teknoloji	NOUN
+
+# date = 2015-04-17
+1	dijital	dijital	NOUN
+2	kultur	kultur	NOUN
+3	inovasyon	inovasyon	NOUN
+4	sinir	sinir	NOUN
+5	finans	finans	NOUN
+6	dil	dil	NOUN
+
+# date = 2015-05-17
+1	ulasim	ulasim	NOUN
+2	savunma	savunma	NOUN
+3	arama	arama	NOUN
+4	dil	dil	NOUN
+5	donusum	donusum	NOUN
+6	metin	metin	NOUN
+7	teknoloji	teknoloji	NOUN
+8	vektor	vektor	NOUN
+
+# date = 2016-04-26
+1	modeli	modeli	NOUN
+2	zeka	zeka	NOUN
+3	derin	derin	NOUN
+4	metin	metin	NOUN
+
+# date = 2016-08-20
+1	kaynak	kaynak	NOUN
+2	etik	etik	NOUN
+3	ulasim	ulasim	NOUN
+
+# date = 2016-10-07
+1	bilim	bilim	NOUN
+2	planlama	planlama	NOUN
+3	saglk	saglk	NOUN
+4	guvenlik	guvenlik	NOUN
+5	metin	metin	NOUN
+6	modeli	modeli	NOUN
+7	tarim	tarim	NOUN
+8	kultur	kultur	NOUN
+
+# date = 2016-01-25
+1	surdurulebilir	surdurulebilir	NOUN
+2	duzenleme	duzenleme	NOUN
+3	uretim	uretim	NOUN
+
+# date = 2016-03-26
+1	enerji	enerji	NOUN
+2	kaynak	kaynak	NOUN
+3	ogrenme	ogrenme	NOUN
+4	cevre	cevre	NOUN
+5	metin	metin	NOUN
+6	buyuk	buyuk	NOUN
+7	toplum	toplum	NOUN
+8	veri	veri	NOUN
+
+# date = 2016-08-22
+1	cevre	cevre	NOUN
+2	hukuk	hukuk	NOUN
+3	tabani	tabani	NOUN
+4	donusum	donusum	NOUN
+5	acik	acik	NOUN
+6	savunma	savunma	NOUN
+7	gelistirme	gelistirme	NOUN
+
+# date = 2016-09-14
+1	acik	acik	NOUN
+2	sinir	sinir	NOUN
+3	inovasyon	inovasyon	NOUN
+4	egitim	egitim	NOUN
+5	kultur	kultur	NOUN
+6	donusturucu	donusturucu	NOUN
+7	metin	metin	NOUN
+
+# date = 2016-11-09
+1	saglk	saglk	NOUN
+2	ulasim	ulasim	NOUN
+3	metin	metin	NOUN
+4	coklu	coklu	NOUN
+5	acik	acik	NOUN
+6	dogal	dogal	NOUN
+7	arastirma	arastirma	NOUN
+
+# date = 2016-05-08
+1	arama	arama	NOUN
+2	tabani	tabani	NOUN
+3	iklim	iklim	NOUN
+4	dil	dil	NOUN
+5	veri	veri	NOUN
+
+# date = 2016-03-08
+1	bilim	bilim	NOUN
+2	modeli	modeli	NOUN
+3	arastirma	arastirma	NOUN
+4	goruntu	goruntu	NOUN
+5	dogal	dogal	NOUN
+6	etik	etik	NOUN
+
+# date = 2016-07-11
+1	kaynak	kaynak	NOUN
+2	etik	etik	NOUN
+3	ogrenme	ogrenme	NOUN
+4	goruntu	goruntu	NOUN
+5	toplum	toplum	NOUN
+6	planlama	planlama	NOUN
+7	egitim	egitim	NOUN
+
+# date = 2016-12-01
+1	planlama	planlama	NOUN
+2	egitim	egitim	NOUN
+3	yapay	yapay	NOUN
+4	otonom	otonom	NOUN
+5	vektor	vektor	NOUN
+6	kultur	kultur	NOUN
+7	etik	etik	NOUN
+
+# date = 2016-09-24
+1	iklim	iklim	NOUN
+2	toplum	toplum	NOUN
+3	hukuk	hukuk	NOUN
+4	uretim	uretim	NOUN
+5	saglk	saglk	NOUN
+6	surdurulebilir	surdurulebilir	NOUN
+7	coklu	coklu	NOUN
+8	duzenleme	duzenleme	NOUN
+
+# date = 2016-08-01
+1	arama	arama	NOUN
+2	finans	finans	NOUN
+3	teknoloji	teknoloji	NOUN
+4	guvenlik	guvenlik	NOUN
+5	gelistirme	gelistirme	NOUN
+6	sinir	sinir	NOUN
+
+# date = 2017-08-05
+1	iklim	iklim	NOUN
+2	zeka	zeka	NOUN
+3	guvenlik	guvenlik	NOUN
+4	egitim	egitim	NOUN
+5	politika	politika	NOUN
+6	finans	finans	NOUN
+7	toplum	toplum	NOUN
+
+# date = 2017-02-21
+1	veri	veri	NOUN
+2	kaynak	kaynak	NOUN
+3	agi	agi	NOUN
+4	ogrenme	ogrenme	NOUN
+5	donusturucu	donusturucu	NOUN
+6	planlama	planlama	NOUN
+
+# date = 2017-06-07
+1	tabani	tabani	NOUN
+2	arama	arama	NOUN
+3	donusum	donusum	NOUN
+4	planlama	planlama	NOUN
+5	coklu	coklu	NOUN
+6	etik	etik	NOUN
+
+# date = 2017-05-27
+1	egitim	egitim	NOUN
+2	zeka	zeka	NOUN
+3	inovasyon	inovasyon	NOUN
+
+# date = 2017-09-02
+1	uretim	uretim	NOUN
+2	tarim	tarim	NOUN
+3	dogal	dogal	NOUN
+4	surdurulebilir	surdurulebilir	NOUN
+5	derin	derin	NOUN
+
+# date = 2017-01-08
+1	zeka	zeka	NOUN
+2	savunma	savunma	NOUN
+3	modeli	modeli	NOUN
+4	metin	metin	NOUN
+
+# date = 2017-03-16
+1	buyuk	buyuk	NOUN
+2	politika	politika	NOUN
+3	goruntu	goruntu	NOUN
+4	kaynak	kaynak	NOUN
+5	bilim	bilim	NOUN
+6	donusturucu	donusturucu	NOUN
+7	ajan	ajan	NOUN
+8	sinir	sinir	NOUN
+
+# date = 2017-10-20
+1	arastirma	arastirma	NOUN
+2	buyuk	buyuk	NOUN
+3	surdurulebilir	surdurulebilir	NOUN
+4	sinir	sinir	NOUN
+5	vektor	vektor	NOUN
+6	isleme	isleme	NOUN
+7	egitim	egitim	NOUN
+8	zeka	zeka	NOUN
+
+# date = 2017-05-19
+1	planlama	planlama	NOUN
+2	guvenlik	guvenlik	NOUN
+3	arastirma	arastirma	NOUN
+4	makine	makine	NOUN
+5	dogal	dogal	NOUN
+6	egitim	egitim	NOUN
+7	bilim	bilim	NOUN
+8	ulasim	ulasim	NOUN
+
+# date = 2017-04-04
+1	surdurulebilir	surdurulebilir	NOUN
+2	vektor	vektor	NOUN
+3	teknoloji	teknoloji	NOUN
+4	hukuk	hukuk	NOUN
+5	buyuk	buyuk	NOUN
+6	politika	politika	NOUN
+7	derin	derin	NOUN
+8	otonom	otonom	NOUN
+
+# date = 2017-09-14
+1	ajan	ajan	NOUN
+2	dogal	dogal	NOUN
+3	ekonomi	ekonomi	NOUN
+4	tarim	tarim	NOUN
+5	arama	arama	NOUN
+6	yapay	yapay	NOUN
+7	etik	etik	NOUN
+8	saglk	saglk	NOUN
+
+# date = 2017-02-14
+1	ulasim	ulasim	NOUN
+2	kaynak	kaynak	NOUN
+3	arastirma	arastirma	NOUN
+4	modeli	modeli	NOUN
+5	duzenleme	duzenleme	NOUN
+
+# date = 2017-03-24
+1	tarim	tarim	NOUN
+2	coklu	coklu	NOUN
+3	savunma	savunma	NOUN
+4	iklim	iklim	NOUN
+5	egitim	egitim	NOUN
+6	kaynak	kaynak	NOUN
+7	duzenleme	duzenleme	NOUN
+
+# date = 2018-12-19
+1	tabani	tabani	NOUN
+2	metin	metin	NOUN
+3	dil	dil	NOUN
+4	coklu	coklu	NOUN
+5	acik	acik	NOUN
+
+# date = 2018-04-25
+1	politika	politika	NOUN
+2	savunma	savunma	NOUN
+3	finans	finans	NOUN
+4	planlama	planlama	NOUN
+5	arama	arama	NOUN
+6	zeka	zeka	NOUN
+
+# date = 2018-08-28
+1	agi	agi	NOUN
+2	saglk	saglk	NOUN
+3	goruntu	goruntu	NOUN
+4	otonom	otonom	NOUN
+5	toplum	toplum	NOUN
+
+# date = 2018-05-11
+1	hukuk	hukuk	NOUN
+2	bilim	bilim	NOUN
+3	coklu	coklu	NOUN
+4	cevre	cevre	NOUN
+5	yapay	yapay	NOUN
+
+# date = 2018-09-07
+1	metin	metin	NOUN
+2	gelistirme	gelistirme	NOUN
+3	etik	etik	NOUN
+
+# date = 2018-08-18
+1	bilim	bilim	NOUN
+2	egitim	egitim	NOUN
+3	tarim	tarim	NOUN
+4	arastirma	arastirma	NOUN
+
+# date = 2018-08-15
+1	dil	dil	NOUN
+2	modal	modal	NOUN
+3	uretim	uretim	NOUN
+
+# date = 2018-07-23
+1	vektor	vektor	NOUN
+2	finans	finans	NOUN
+3	egitim	egitim	NOUN
+4	ajan	ajan	NOUN
+
+# date = 2018-08-18
+1	otonom	otonom	NOUN
+2	duzenleme	duzenleme	NOUN
+3	inovasyon	inovasyon	NOUN
+4	cevre	cevre	NOUN
+5	arama	arama	NOUN
+6	kultur	kultur	NOUN
+7	bilim	bilim	NOUN
+
+# date = 2018-08-09
+1	donusturucu	donusturucu	NOUN
+2	uretim	uretim	NOUN
+3	buyuk	buyuk	NOUN
+4	gelistirme	gelistirme	NOUN
+5	makine	makine	NOUN
+
+# date = 2018-06-04
+1	iklim	iklim	NOUN
+2	donusum	donusum	NOUN
+3	bilim	bilim	NOUN
+4	agi	agi	NOUN
+5	makine	makine	NOUN
+6	goruntu	goruntu	NOUN
+7	egitim	egitim	NOUN
+8	coklu	coklu	NOUN
+
+# date = 2018-12-19
+1	hukuk	hukuk	NOUN
+2	modal	modal	NOUN
+3	isleme	isleme	NOUN
+4	makine	makine	NOUN
+5	toplum	toplum	NOUN
+6	uretim	uretim	NOUN
+7	ajan	ajan	NOUN
+
+# date = 2018-03-10
+1	arastirma	arastirma	NOUN
+2	iklim	iklim	NOUN
+3	veri	veri	NOUN
+
+# date = 2019-05-02
+1	cevre	cevre	NOUN
+2	modal	modal	NOUN
+3	bilim	bilim	NOUN
+
+# date = 2019-03-21
+1	isleme	isleme	NOUN
+2	yapay	yapay	NOUN
+3	politika	politika	NOUN
+4	modal	modal	NOUN
+5	egitim	egitim	NOUN
+6	donusum	donusum	NOUN
+
+# date = 2019-08-11
+1	ogrenme	ogrenme	NOUN
+2	donusturucu	donusturucu	NOUN
+3	egitim	egitim	NOUN
+4	buyuk	buyuk	NOUN
+
+# date = 2019-02-13
+1	dogal	dogal	NOUN
+2	politika	politika	NOUN
+3	ulasim	ulasim	NOUN
+4	teknoloji	teknoloji	NOUN
+5	ogrenme	ogrenme	NOUN
+6	modeli	modeli	NOUN
+
+# date = 2019-03-26
+1	vektor	vektor	NOUN
+2	dil	dil	NOUN
+3	metin	metin	NOUN
+4	buyuk	buyuk	NOUN
+5	cevre	cevre	NOUN
+6	etik	etik	NOUN
+7	hukuk	hukuk	NOUN
+
+# date = 2019-10-26
+1	uretim	uretim	NOUN
+2	surdurulebilir	surdurulebilir	NOUN
+3	enerji	enerji	NOUN
+4	planlama	planlama	NOUN
+5	acik	acik	NOUN
+6	donusum	donusum	NOUN
+7	vektor	vektor	NOUN
+
+# date = 2019-10-14
+1	politika	politika	NOUN
+2	savunma	savunma	NOUN
+3	ogrenme	ogrenme	NOUN
+4	inovasyon	inovasyon	NOUN
+5	isleme	isleme	NOUN
+
+# date = 2019-04-21
+1	donusturucu	donusturucu	NOUN
+2	finans	finans	NOUN
+3	dil	dil	NOUN
+4	sinir	sinir	NOUN
+
+# date = 2019-04-06
+1	dogal	dogal	NOUN
+2	sinir	sinir	NOUN
+3	yapay	yapay	NOUN
+4	etik	etik	NOUN
+5	acik	acik	NOUN
+6	bilim	bilim	NOUN
+7	hukuk	hukuk	NOUN
+
+# date = 2019-08-10
+1	uretim	uretim	NOUN
+2	modal	modal	NOUN
+3	arastirma	arastirma	NOUN
+
+# date = 2019-05-23
+1	dogal	dogal	NOUN
+2	teknoloji	teknoloji	NOUN
+3	uretim	uretim	NOUN
+4	donusturucu	donusturucu	NOUN
+5	ulasim	ulasim	NOUN
+6	egitim	egitim	NOUN
+
+# date = 2019-11-26
+1	duzenleme	duzenleme	NOUN
+2	buyuk	buyuk	NOUN
+3	iklim	iklim	NOUN
+4	uretim	uretim	NOUN
+
+# date = 2019-11-05
+1	kultur	kultur	NOUN
+2	modeli	modeli	NOUN
+3	dogal	dogal	NOUN
+4	ogrenme	ogrenme	NOUN
+5	sinir	sinir	NOUN
+
+# date = 2019-05-20
+1	kultur	kultur	NOUN
+2	politika	politika	NOUN
+3	modal	modal	NOUN
+4	acik	acik	NOUN
+5	buyuk	buyuk	NOUN
+6	kaynak	kaynak	NOUN
+7	bilim	bilim	NOUN
+8	vektor	vektor	NOUN
+
+# date = 2020-12-13
+1	ekonomi	ekonomi	NOUN
+2	iklim	iklim	NOUN
+3	saglk	saglk	NOUN
+4	acik	acik	NOUN
+5	dil	dil	NOUN
+
+# date = 2020-10-02
+1	inovasyon	inovasyon	NOUN
+2	tabani	tabani	NOUN
+3	hukuk	hukuk	NOUN
+4	donusturucu	donusturucu	NOUN
+5	zeka	zeka	NOUN
+6	dil	dil	NOUN
+
+# date = 2020-04-22
+1	egitim	egitim	NOUN
+2	zeka	zeka	NOUN
+3	donusum	donusum	NOUN
+4	teknoloji	teknoloji	NOUN
+5	coklu	coklu	NOUN
+6	politika	politika	NOUN
+7	derin	derin	NOUN
+
+# date = 2020-03-16
+1	tarim	tarim	NOUN
+2	acik	acik	NOUN
+3	coklu	coklu	NOUN
+4	agi	agi	NOUN
+5	egitim	egitim	NOUN
+6	duzenleme	duzenleme	NOUN
+7	ulasim	ulasim	NOUN
+
+# date = 2020-08-03
+1	otonom	otonom	NOUN
+2	etik	etik	NOUN
+3	arama	arama	NOUN
+4	tabani	tabani	NOUN
+5	finans	finans	NOUN
+6	isleme	isleme	NOUN
+
+# date = 2020-03-11
+1	bilim	bilim	NOUN
+2	saglk	saglk	NOUN
+3	modal	modal	NOUN
+4	finans	finans	NOUN
+5	guvenlik	guvenlik	NOUN
+6	cevre	cevre	NOUN
+
+# date = 2020-01-15
+1	tabani	tabani	NOUN
+2	donusturucu	donusturucu	NOUN
+3	buyuk	buyuk	NOUN
+
+# date = 2020-07-28
+1	kultur	kultur	NOUN
+2	yapay	yapay	NOUN
+3	finans	finans	NOUN
+4	iklim	iklim	NOUN
+5	kaynak	kaynak	NOUN
+6	etik	etik	NOUN
+7	ogrenme	ogrenme	NOUN
+
+# date = 2020-04-17
+1	savunma	savunma	NOUN
+2	donusum	donusum	NOUN
+3	saglk	saglk	NOUN
+4	ulasim	ulasim	NOUN
+5	acik	acik	NOUN
+
+# date = 2020-01-07
+1	cevre	cevre	NOUN
+2	veri	veri	NOUN
+3	modal	modal	NOUN
+4	acik	acik	NOUN
+5	bilim	bilim	NOUN
+
+# date = 2020-08-04
+1	ulasim	ulasim	NOUN
+2	hukuk	hukuk	NOUN
+3	toplum	toplum	NOUN
+
+# date = 2020-04-23
+1	vektor	vektor	NOUN
+2	cevre	cevre	NOUN
+3	yapay	yapay	NOUN
+4	etik	etik	NOUN
+
+# date = 2020-02-08
+1	kaynak	kaynak	NOUN
+2	buyuk	buyuk	NOUN
+3	tarim	tarim	NOUN
+
+# date = 2021-03-16
+1	modal	modal	NOUN
+2	ekonomi	ekonomi	NOUN
+3	arastirma	arastirma	NOUN
+4	coklu	coklu	NOUN
+5	etik	etik	NOUN
+6	egitim	egitim	NOUN
+7	inovasyon	inovasyon	NOUN
+8	metin	metin	NOUN
+
+# date = 2021-08-18
+1	planlama	planlama	NOUN
+2	makine	makine	NOUN
+3	hukuk	hukuk	NOUN
+4	ekonomi	ekonomi	NOUN
+
+# date = 2021-12-05
+1	coklu	coklu	NOUN
+2	surdurulebilir	surdurulebilir	NOUN
+3	dijital	dijital	NOUN
+
+# date = 2021-07-11
+1	coklu	coklu	NOUN
+2	yapay	yapay	NOUN
+3	modal	modal	NOUN
+4	gelistirme	gelistirme	NOUN
+5	vektor	vektor	NOUN
+6	egitim	egitim	NOUN
+7	inovasyon	inovasyon	NOUN
+
+# date = 2021-11-16
+1	acik	acik	NOUN
+2	iklim	iklim	NOUN
+3	egitim	egitim	NOUN
+4	otonom	otonom	NOUN
+
+# date = 2021-06-18
+1	planlama	planlama	NOUN
+2	kaynak	kaynak	NOUN
+3	tabani	tabani	NOUN
+4	makine	makine	NOUN
+5	bilim	bilim	NOUN
+6	metin	metin	NOUN
+7	politika	politika	NOUN
+
+# date = 2021-07-08
+1	derin	derin	NOUN
+2	tabani	tabani	NOUN
+3	inovasyon	inovasyon	NOUN
+4	egitim	egitim	NOUN
+5	arastirma	arastirma	NOUN
+6	planlama	planlama	NOUN
+
+# date = 2021-07-22
+1	modeli	modeli	NOUN
+2	saglk	saglk	NOUN
+3	derin	derin	NOUN
+4	veri	veri	NOUN
+5	ekonomi	ekonomi	NOUN
+6	egitim	egitim	NOUN
+7	arama	arama	NOUN
+8	isleme	isleme	NOUN
+
+# date = 2021-08-04
+1	kaynak	kaynak	NOUN
+2	yapay	yapay	NOUN
+3	gelistirme	gelistirme	NOUN
+4	modeli	modeli	NOUN
+5	etik	etik	NOUN
+6	tarim	tarim	NOUN
+7	surdurulebilir	surdurulebilir	NOUN
+
+# date = 2021-02-16
+1	arama	arama	NOUN
+2	savunma	savunma	NOUN
+3	bilim	bilim	NOUN
+4	guvenlik	guvenlik	NOUN
+5	tarim	tarim	NOUN
+
+# date = 2021-02-28
+1	teknoloji	teknoloji	NOUN
+2	iklim	iklim	NOUN
+3	planlama	planlama	NOUN
+4	tabani	tabani	NOUN
+5	ulasim	ulasim	NOUN
+
+# date = 2021-12-25
+1	iklim	iklim	NOUN
+2	derin	derin	NOUN
+3	savunma	savunma	NOUN
+4	dogal	dogal	NOUN
+5	metin	metin	NOUN
+6	ulasim	ulasim	NOUN
+
+# date = 2021-11-10
+1	inovasyon	inovasyon	NOUN
+2	dil	dil	NOUN
+3	duzenleme	duzenleme	NOUN
+4	isleme	isleme	NOUN
+
+# date = 2022-11-23
+1	acik	acik	NOUN
+2	sinir	sinir	NOUN
+3	bilim	bilim	NOUN
+
+# date = 2022-05-01
+1	tabani	tabani	NOUN
+2	dijital	dijital	NOUN
+3	ogrenme	ogrenme	NOUN
+
+# date = 2022-05-12
+1	duzenleme	duzenleme	NOUN
+2	modeli	modeli	NOUN
+3	metin	metin	NOUN
+4	enerji	enerji	NOUN
+5	etik	etik	NOUN
+
+# date = 2022-10-22
+1	sinir	sinir	NOUN
+2	agi	agi	NOUN
+3	dil	dil	NOUN
+4	savunma	savunma	NOUN
+
+# date = 2022-07-20
+1	metin	metin	NOUN
+2	saglk	saglk	NOUN
+3	egitim	egitim	NOUN
+4	modeli	modeli	NOUN
+5	uretim	uretim	NOUN
+6	kaynak	kaynak	NOUN
+7	ulasim	ulasim	NOUN
+8	donusturucu	donusturucu	NOUN
+
+# date = 2022-08-09
+1	yapay	yapay	NOUN
+2	toplum	toplum	NOUN
+3	kaynak	kaynak	NOUN
+4	modal	modal	NOUN
+5	teknoloji	teknoloji	NOUN
+6	iklim	iklim	NOUN
+7	sinir	sinir	NOUN
+8	dogal	dogal	NOUN
+
+# date = 2022-08-12
+1	vektor	vektor	NOUN
+2	ulasim	ulasim	NOUN
+3	duzenleme	duzenleme	NOUN
+4	bilim	bilim	NOUN
+5	donusturucu	donusturucu	NOUN
+6	kaynak	kaynak	NOUN
+7	kultur	kultur	NOUN
+
+# date = 2022-04-13
+1	isleme	isleme	NOUN
+2	metin	metin	NOUN
+3	planlama	planlama	NOUN
+4	politika	politika	NOUN
+5	otonom	otonom	NOUN
+6	surdurulebilir	surdurulebilir	NOUN
+
+# date = 2022-05-23
+1	zeka	zeka	NOUN
+2	finans	finans	NOUN
+3	guvenlik	guvenlik	NOUN
+4	coklu	coklu	NOUN
+5	yapay	yapay	NOUN
+
+# date = 2022-10-28
+1	surdurulebilir	surdurulebilir	NOUN
+2	inovasyon	inovasyon	NOUN
+3	ogrenme	ogrenme	NOUN
+4	hukuk	hukuk	NOUN
+5	toplum	toplum	NOUN
+6	saglk	saglk	NOUN
+7	modal	modal	NOUN
+8	uretim	uretim	NOUN
+
+# date = 2022-10-26
+1	uretim	uretim	NOUN
+2	ulasim	ulasim	NOUN
+3	makine	makine	NOUN
+4	savunma	savunma	NOUN
+5	donusturucu	donusturucu	NOUN
+
+# date = 2022-11-25
+1	surdurulebilir	surdurulebilir	NOUN
+2	finans	finans	NOUN
+3	teknoloji	teknoloji	NOUN
+4	veri	veri	NOUN
+5	ulasim	ulasim	NOUN
+6	isleme	isleme	NOUN
+7	donusum	donusum	NOUN
+8	tarim	tarim	NOUN
+
+# date = 2022-01-10
+1	derin	derin	NOUN
+2	egitim	egitim	NOUN
+3	ajan	ajan	NOUN
+4	gelistirme	gelistirme	NOUN
+5	veri	veri	NOUN
+6	dil	dil	NOUN
+
+# date = 2022-05-11
+1	etik	etik	NOUN
+2	agi	agi	NOUN
+3	makine	makine	NOUN
+4	veri	veri	NOUN
+5	iklim	iklim	NOUN
+6	ajan	ajan	NOUN
+7	enerji	enerji	NOUN
+8	ekonomi	ekonomi	NOUN
+
+# date = 2023-05-27
+1	donusturucu	donusturucu	NOUN
+2	kultur	kultur	NOUN
+3	egitim	egitim	NOUN
+4	toplum	toplum	NOUN
+
+# date = 2023-05-24
+1	toplum	toplum	NOUN
+2	buyuk	buyuk	NOUN
+3	kaynak	kaynak	NOUN
+4	dogal	dogal	NOUN
+5	modeli	modeli	NOUN
+
+# date = 2023-04-28
+1	gelistirme	gelistirme	NOUN
+2	teknoloji	teknoloji	NOUN
+3	guvenlik	guvenlik	NOUN
+4	cevre	cevre	NOUN
+5	ajan	ajan	NOUN
+6	dil	dil	NOUN
+7	dijital	dijital	NOUN
+8	yapay	yapay	NOUN
+
+# date = 2023-05-18
+1	kaynak	kaynak	NOUN
+2	ajan	ajan	NOUN
+3	teknoloji	teknoloji	NOUN
+
+# date = 2023-12-22
+1	egitim	egitim	NOUN
+2	planlama	planlama	NOUN
+3	kultur	kultur	NOUN
+4	ulasim	ulasim	NOUN
+5	ajan	ajan	NOUN
+
+# date = 2023-02-22
+1	egitim	egitim	NOUN
+2	zeka	zeka	NOUN
+3	savunma	savunma	NOUN
+4	cevre	cevre	NOUN
+
+# date = 2023-06-20
+1	tarim	tarim	NOUN
+2	dogal	dogal	NOUN
+3	ulasim	ulasim	NOUN
+4	kultur	kultur	NOUN
+
+# date = 2023-08-23
+1	tarim	tarim	NOUN
+2	etik	etik	NOUN
+3	buyuk	buyuk	NOUN
+4	veri	veri	NOUN
+5	derin	derin	NOUN
+
+# date = 2023-01-10
+1	buyuk	buyuk	NOUN
+2	isleme	isleme	NOUN
+3	metin	metin	NOUN
+4	iklim	iklim	NOUN
+5	veri	veri	NOUN
+6	planlama	planlama	NOUN
+
+# date = 2023-08-12
+1	inovasyon	inovasyon	NOUN
+2	bilim	bilim	NOUN
+3	iklim	iklim	NOUN
+4	etik	etik	NOUN
+5	egitim	egitim	NOUN
+6	kultur	kultur	NOUN
+7	gelistirme	gelistirme	NOUN
+8	modeli	modeli	NOUN
+
+# date = 2023-07-21
+1	saglk	saglk	NOUN
+2	savunma	savunma	NOUN
+3	etik	etik	NOUN
+
+# date = 2023-05-02
+1	ajan	ajan	NOUN
+2	goruntu	goruntu	NOUN
+3	acik	acik	NOUN
+4	dijital	dijital	NOUN
+5	metin	metin	NOUN
+6	kultur	kultur	NOUN
+7	isleme	isleme	NOUN
+8	teknoloji	teknoloji	NOUN
+
+# date = 2023-06-18
+1	otonom	otonom	NOUN
+2	ogrenme	ogrenme	NOUN
+3	guvenlik	guvenlik	NOUN
+4	coklu	coklu	NOUN
+5	makine	makine	NOUN
+6	buyuk	buyuk	NOUN
+7	kaynak	kaynak	NOUN
+8	dil	dil	NOUN
+
+# date = 2024-11-07
+1	ulasim	ulasim	NOUN
+2	hukuk	hukuk	NOUN
+3	zeka	zeka	NOUN
+4	ogrenme	ogrenme	NOUN
+5	arama	arama	NOUN
+6	metin	metin	NOUN
+7	veri	veri	NOUN
+8	politika	politika	NOUN
+
+# date = 2024-04-03
+1	goruntu	goruntu	NOUN
+2	egitim	egitim	NOUN
+3	kultur	kultur	NOUN
+4	uretim	uretim	NOUN
+5	arama	arama	NOUN
+6	modeli	modeli	NOUN
+7	hukuk	hukuk	NOUN
+
+# date = 2024-01-09
+1	veri	veri	NOUN
+2	iklim	iklim	NOUN
+3	donusturucu	donusturucu	NOUN
+4	toplum	toplum	NOUN
+
+# date = 2024-03-04
+1	zeka	zeka	NOUN
+2	veri	veri	NOUN
+3	yapay	yapay	NOUN
+4	otonom	otonom	NOUN
+5	metin	metin	NOUN
+6	egitim	egitim	NOUN
+7	tabani	tabani	NOUN
+8	kultur	kultur	NOUN
+
+# date = 2024-03-09
+1	veri	veri	NOUN
+2	inovasyon	inovasyon	NOUN
+3	etik	etik	NOUN
+
+# date = 2024-09-04
+1	dogal	dogal	NOUN
+2	egitim	egitim	NOUN
+3	acik	acik	NOUN
+4	surdurulebilir	surdurulebilir	NOUN
+5	ajan	ajan	NOUN
+6	ekonomi	ekonomi	NOUN
+7	egitim	egitim	NOUN
+8	isleme	isleme	NOUN
+
+# date = 2024-08-17
+1	savunma	savunma	NOUN
+2	derin	derin	NOUN
+3	gelistirme	gelistirme	NOUN
+4	dijital	dijital	NOUN
+
+# date = 2024-11-17
+1	kaynak	kaynak	NOUN
+2	tarim	tarim	NOUN
+3	zeka	zeka	NOUN
+4	ogrenme	ogrenme	NOUN
+5	egitim	egitim	NOUN
+
+# date = 2024-07-14
+1	isleme	isleme	NOUN
+2	saglk	saglk	NOUN
+3	arastirma	arastirma	NOUN
+4	acik	acik	NOUN
+5	dogal	dogal	NOUN
+6	dil	dil	NOUN
+7	tabani	tabani	NOUN
+8	hukuk	hukuk	NOUN
+
+# date = 2024-03-03
+1	coklu	coklu	NOUN
+2	savunma	savunma	NOUN
+3	ulasim	ulasim	NOUN
+4	egitim	egitim	NOUN
+
+# date = 2024-09-23
+1	planlama	planlama	NOUN
+2	hukuk	hukuk	NOUN
+3	enerji	enerji	NOUN
+4	modal	modal	NOUN
+5	kaynak	kaynak	NOUN
+
+# date = 2024-09-20
+1	isleme	isleme	NOUN
+2	dijital	dijital	NOUN
+3	bilim	bilim	NOUN
+4	buyuk	buyuk	NOUN
+5	tarim	tarim	NOUN
+6	donusum	donusum	NOUN
+
+# date = 2024-09-24
+1	duzenleme	duzenleme	NOUN
+2	acik	acik	NOUN
+3	uretim	uretim	NOUN
+4	etik	etik	NOUN
