@@ -17,6 +17,7 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <head>
         <meta httpEquiv="Content-Security-Policy" content="script-src 'self' 'unsafe-eval' 'unsafe-inline';" />
+        <meta name="google-site-verification" content="iWWxPp7bzUz7BIlM8Kb27tIKEtz_6Y9iz1tqI6TGEI4" />
       </head>
       <body className="font-sans">{children}</body>
     </html>
