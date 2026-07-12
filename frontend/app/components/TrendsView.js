@@ -3,8 +3,7 @@
 import { useRef, useEffect, useMemo, useState } from 'react';
 import * as d3 from 'd3';
 import { formatTime } from '../lib/utils';
-
-const COLORS = ['#dc2626','#16a34a','#ca8a04','#2563eb','#9333ea','#0891b2','#ea580c','#4f46e5','#0d9488','#db2777','#65a30d','#a855f7','#eab308','#3b82f6','#64748b'];
+import { getCliqueColor, prefersDark, CLIQUE_PALETTE } from '../lib/palette';
 
 export default function TrendsView({ data, height = 300 }) {
   const svgRef = useRef(null);
@@ -17,6 +16,10 @@ export default function TrendsView({ data, height = 300 }) {
 
   useEffect(() => {
     if (!svgRef.current || timelines.length === 0) return;
+    const isDark = prefersDark();
+    const axisColor = isDark ? '#9ca3af' : '#6b7280';
+    const barStroke = isDark ? '#60a5fa' : '#1e40af';
+
     const svg = d3.select(svgRef.current);
     svg.selectAll('*').remove();
     const margin = { top: 20, right: 20, bottom: 40, left: 120 };
@@ -28,11 +31,15 @@ export default function TrendsView({ data, height = 300 }) {
     const maxSize = d3.max(timelines, t => t.max_size) || 1;
     const colorScale = d3.scaleSequential(d3.interpolateBlues).domain([1, maxSize]);
 
-    g.append('g').attr('transform', `translate(0,${gHeight})`)
+    const xAxis = g.append('g').attr('transform', `translate(0,${gHeight})`)
       .call(d3.axisBottom(xScale).ticks(8).tickFormat(d => formatTime(d))).attr('font-size', '10px');
-    g.append('g').call(d3.axisLeft(yScale)).attr('font-size', '10px');
+    const yAxis = g.append('g').call(d3.axisLeft(yScale)).attr('font-size', '10px');
+    [xAxis, yAxis].forEach(axis => {
+      axis.selectAll('text').attr('fill', axisColor);
+      axis.selectAll('.domain, line').attr('stroke', axisColor);
+    });
     g.append('text').attr('x', Math.max(width, 1) / 2).attr('y', gHeight + 35)
-      .attr('text-anchor', 'middle').attr('font-size', '11px').attr('fill', '#6b7280').text('Zaman');
+      .attr('text-anchor', 'middle').attr('font-size', '11px').attr('fill', axisColor).text('Zaman');
 
     timelines.forEach(tl => {
       tl.snapshots.forEach(s => {
@@ -41,7 +48,7 @@ export default function TrendsView({ data, height = 300 }) {
         g.append('rect').attr('x', xScale(s.window_start)).attr('y', y)
           .attr('width', Math.max(xScale(s.window_end) - xScale(s.window_start), 2))
           .attr('height', yScale.bandwidth()).attr('fill', colorScale(s.size))
-          .attr('stroke', '#1e40af').attr('stroke-width', 0.5).attr('rx', 1)
+          .attr('stroke', barStroke).attr('stroke-width', 0.5).attr('rx', 1)
           .append('title').text(`${tl.label}\n${s.size} üye\n${s.members.slice(0,5).join(', ')}`);
       });
     });
@@ -49,6 +56,8 @@ export default function TrendsView({ data, height = 300 }) {
 
   useEffect(() => {
     if (!lineSvgRef.current || timelines.length === 0 || !showLines) return;
+    const isDark = prefersDark();
+    const axisColor = isDark ? '#9ca3af' : '#6b7280';
 
     const svg = d3.select(lineSvgRef.current);
     svg.selectAll('*').remove();
@@ -64,12 +73,16 @@ export default function TrendsView({ data, height = 300 }) {
     const maxSz = d3.max(allSizes) || 1;
     const yScale = d3.scaleLinear().domain([0, maxSz]).range([Math.max(lHeight, 1), 0]);
 
-    g.append('g').attr('transform', `translate(0,${lHeight})`)
+    const xAxis = g.append('g').attr('transform', `translate(0,${lHeight})`)
       .call(d3.axisBottom(xScale).ticks(6).tickFormat(d => formatTime(d))).attr('font-size', '10px');
-    g.append('g').call(d3.axisLeft(yScale).ticks(5)).attr('font-size', '10px');
+    const yAxis = g.append('g').call(d3.axisLeft(yScale).ticks(5)).attr('font-size', '10px');
+    [xAxis, yAxis].forEach(axis => {
+      axis.selectAll('text').attr('fill', axisColor);
+      axis.selectAll('.domain, line').attr('stroke', axisColor);
+    });
 
     g.append('text').attr('x', Math.max(width, 1) / 2).attr('y', lHeight + 35)
-      .attr('text-anchor', 'middle').attr('font-size', '11px').attr('fill', '#6b7280').text('Zaman');
+      .attr('text-anchor', 'middle').attr('font-size', '11px').attr('fill', axisColor).text('Zaman');
 
     const lineGen = d3.line().x(d => d.x).y(d => d.y).curve(d3.curveMonotoneX);
 
@@ -78,57 +91,74 @@ export default function TrendsView({ data, height = 300 }) {
         x: xScale((s.window_start + s.window_end) / 2),
         y: yScale(s.size),
       }));
+      const color = getCliqueColor(i);
       if (pts.length >= 2) {
         g.append('path').datum(pts).attr('fill', 'none')
-          .attr('stroke', COLORS[i % COLORS.length]).attr('stroke-width', 2).attr('d', lineGen);
+          .attr('stroke', color).attr('stroke-width', 2).attr('d', lineGen);
       }
       pts.forEach((p, j) => {
         g.append('circle').attr('cx', p.x).attr('cy', p.y).attr('r', 3)
-          .attr('fill', COLORS[i % COLORS.length])
+          .attr('fill', color)
           .append('title').text(`${tl.label}: ${tl.snapshots[j].size} members`);
       });
     });
   }, [timelines, timeRange, showLines]);
 
   if (!data || timelines.length === 0) {
-    return <div style={{ height }} className="flex items-center justify-center bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-400">Trend verisi yok</div>;
+    return <div style={{ height }} className="flex items-center justify-center bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg text-sm text-gray-400 dark:text-gray-500">Trend verisi yok</div>;
   }
 
   return (
     <div>
-      <div className="flex gap-4 mb-4 flex-wrap items-center text-xs text-gray-500">
-        <span><strong className="text-gray-900">{timelines.length}</strong> klik zamansalı</span>
+      <div className="flex gap-4 mb-4 flex-wrap items-center text-xs text-gray-500 dark:text-gray-400">
+        <span><strong className="text-gray-900 dark:text-gray-100">{timelines.length}</strong> klik zamansalı</span>
         <span>{formatTime(timeRange[0])} &mdash; {formatTime(timeRange[1])}</span>
-        <span><strong className="text-gray-900">{windowEdges.length}</strong> pencere</span>
-        <label className="flex items-center gap-1.5 cursor-pointer hover:text-gray-700">
+        <span><strong className="text-gray-900 dark:text-gray-100">{windowEdges.length}</strong> pencere</span>
+        <label className="flex items-center gap-1.5 cursor-pointer hover:text-gray-700 dark:hover:text-gray-300">
           <input type="checkbox" checked={showLines} onChange={e => setShowLines(e.target.checked)} className="w-3 h-3" />
           Boyut eğrisi
         </label>
       </div>
-      <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
+      <div className="border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden bg-white dark:bg-gray-950">
         <svg ref={svgRef} width="100%" height={height} className="block" />
       </div>
       {showLines && (
-        <div className="border border-gray-200 rounded-lg overflow-hidden bg-white mt-3">
-          <svg ref={lineSvgRef} width="100%" height={200} className="block" />
+        <div className="mt-3">
+          <div className="flex flex-wrap gap-x-3 gap-y-1.5 mb-2 text-xs text-gray-600 dark:text-gray-400">
+            {timelines.slice(0, CLIQUE_PALETTE.length).map((tl, i) => (
+              <span key={tl.id} className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: getCliqueColor(i) }} />
+                {tl.label}
+              </span>
+            ))}
+            {timelines.length > CLIQUE_PALETTE.length && (
+              <span className="flex items-center gap-1.5 text-gray-400 dark:text-gray-500">
+                <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: getCliqueColor(CLIQUE_PALETTE.length) }} />
+                Diğer ({timelines.length - CLIQUE_PALETTE.length})
+              </span>
+            )}
+          </div>
+          <div className="border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden bg-white dark:bg-gray-950">
+            <svg ref={lineSvgRef} width="100%" height={200} className="block" />
+          </div>
         </div>
       )}
       <div className="mt-4">
-        <div className="text-sm font-medium text-gray-900 mb-3">Klik Detayları</div>
+        <div className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-3">Klik Detayları</div>
         <div className="flex flex-col gap-1.5">
           {timelines.map((tl, i) => (
-            <div key={tl.id} className="border border-gray-200 rounded-lg p-3 bg-white text-sm"
-              style={{ borderLeft: `3px solid ${COLORS[i % COLORS.length]}` }}>
+            <div key={tl.id} className="border border-gray-200 dark:border-gray-800 rounded-lg p-3 bg-white dark:bg-gray-950 text-sm dark:text-gray-200"
+              style={{ borderLeft: `3px solid ${getCliqueColor(i)}` }}>
               <div className="flex justify-between mb-1.5">
                 <strong>{tl.label}</strong>
-                <span className="text-gray-400 text-xs">
+                <span className="text-gray-400 dark:text-gray-500 text-xs">
                   {formatTime(tl.birth)} &mdash; {tl.death ? formatTime(tl.death) : 'devam'}
                   {' | '}max {tl.max_size}
                 </span>
               </div>
               <div className="flex gap-1 flex-wrap">
                 {tl.snapshots.map((s, j) => (
-                  <span key={j} className="px-1.5 py-0.5 bg-gray-100 rounded text-xs text-gray-600"
+                  <span key={j} className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-800 rounded text-xs text-gray-600 dark:text-gray-400"
                     title={s.members.join(', ')}>
                     w{s.window} ({s.size}): [{s.members.slice(0, 4).join(', ')}{s.members.length > 4 ? '…' : ''}]
                   </span>

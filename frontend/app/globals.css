@@ -1,20 +1,36 @@
 @import 'tailwindcss';
 
+/* Chrome/ink roles from the dataviz skill's validated palette
+   (references/palette.md § Chart chrome & ink) -- the same source the
+   clique color palette (lib/palette.js) is drawn from, so page chrome and
+   chart colors read as one system instead of two unrelated choices. */
 @theme {
-  --color-accent: #2563eb;
-  --color-accent-hover: #1d4ed8;
+  --color-accent: #2a78d6;
+  --color-accent-hover: #1c5cab;
   --color-border: #e5e7eb;
   --color-bg-alt: #f8fafc;
-  --color-success: #059669;
+  --color-success: #006300;
   --color-warning: #d97706;
   --color-danger: #dc2626;
+}
+
+:root {
+  --page-bg: #f9f9f7;
+  --page-fg: #0b0b0b;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --page-bg: #0d0d0d;
+    --page-fg: #ffffff;
+  }
 }
 
 body {
   margin: 0;
   padding: 0;
-  background: #fafbfc;
-  color: #1a1a2e;
+  background: var(--page-bg);
+  color: var(--page-fg);
   -webkit-font-smoothing: antialiased;
 }
 
@@ -23,7 +39,7 @@ body {
 }
 
 :focus-visible {
-  outline: 2px solid #2563eb;
+  outline: 2px solid #2a78d6;
   outline-offset: 2px;
 }
 

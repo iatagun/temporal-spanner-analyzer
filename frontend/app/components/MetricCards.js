@@ -2,11 +2,11 @@
 
 export function MetricCard({ label, value, desc }) {
   return (
-    <div className="bg-white p-4 text-center group relative" title={desc}>
-      <div className="text-[10px] uppercase tracking-wide text-gray-400 mb-1.5">
+    <div className="bg-white dark:bg-gray-950 p-4 text-center group relative" title={desc}>
+      <div className="text-[10px] uppercase tracking-wide text-gray-400 dark:text-gray-500 mb-1.5">
         {label}
       </div>
-      <div className="text-lg font-semibold text-gray-900 tabular-nums">
+      <div className="text-lg font-semibold text-gray-900 dark:text-gray-100 tabular-nums">
         {value}
       </div>
     </div>
@@ -28,9 +28,9 @@ export default function MetricCards({ metrics }) {
   ];
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-4 border border-gray-200 rounded-lg overflow-hidden mb-6 animate-in">
+    <div className="grid grid-cols-2 sm:grid-cols-4 border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden mb-6 animate-in">
       {cards.map((c, i) => (
-        <div key={i} className={`${i < cards.length - (cards.length % 4 || 4) ? 'border-b' : ''} ${(i + 1) % 4 !== 0 ? 'border-r' : ''} border-gray-100`}>
+        <div key={i} className={`${i < cards.length - (cards.length % 4 || 4) ? 'border-b' : ''} ${(i + 1) % 4 !== 0 ? 'border-r' : ''} border-gray-100 dark:border-gray-800`}>
           <MetricCard label={c.label} value={c.value} />
         </div>
       ))}

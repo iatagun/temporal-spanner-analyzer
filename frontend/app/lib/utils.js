@@ -1,8 +1,9 @@
-const CLIQUE_COLORS = [
-  '#ef4444', '#22c55e', '#f59e0b', '#3b82f6', '#8b5cf6',
-  '#06b6d4', '#f97316', '#6366f1', '#14b8a6', '#ec4899',
-  '#84cc16', '#a855f7', '#eab308', '#3b82f6', '#64748b',
-];
+import { getCliqueColor } from './palette';
+
+// Reserved for vertices that belong to more than one clique -- distinct
+// from the palette itself so it can never be mistaken for a specific
+// clique's identity color.
+const MULTI_CLIQUE_COLOR = '#f1c40f';
 
 export function formatTime(t) {
   if (t === undefined || t === null) return '';
@@ -54,10 +55,10 @@ export function buildCliqueColorMap(vertices, cliques) {
   const colorMap = {};
   cliques.forEach((c, i) => {
     c.forEach(v => {
-      if (!multi.has(v)) colorMap[v] = CLIQUE_COLORS[i % CLIQUE_COLORS.length];
+      if (!multi.has(v)) colorMap[v] = getCliqueColor(i);
     });
   });
-  multi.forEach(v => { colorMap[v] = '#f1c40f'; });
+  multi.forEach(v => { colorMap[v] = MULTI_CLIQUE_COLOR; });
 
   return colorMap;
 }

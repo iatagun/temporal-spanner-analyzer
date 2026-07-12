@@ -172,6 +172,27 @@ export default function Home() {
         <div className="flex-1 min-w-0">
           <Header />
 
+          <div className="xl:hidden flex flex-col gap-2 mb-6">
+            <details className="border border-gray-200 dark:border-gray-800 rounded-lg p-3 group">
+              <summary className="text-xs font-medium text-gray-600 dark:text-gray-400 cursor-pointer select-none list-none flex items-center justify-between">
+                Kuramsal Çerçeve
+                <span className="text-gray-400 group-open:rotate-180 transition-transform">▾</span>
+              </summary>
+              <div className="mt-3">
+                <LeftSidebar />
+              </div>
+            </details>
+            <details className="border border-gray-200 dark:border-gray-800 rounded-lg p-3 group">
+              <summary className="text-xs font-medium text-gray-600 dark:text-gray-400 cursor-pointer select-none list-none flex items-center justify-between">
+                Kullanım ve Dosya Şablonları
+                <span className="text-gray-400 group-open:rotate-180 transition-transform">▾</span>
+              </summary>
+              <div className="mt-3">
+                <RightSidebar />
+              </div>
+            </details>
+          </div>
+
       <ControlPanel
         loading={loading}
         onUpload={handleUpload}
@@ -189,7 +210,7 @@ export default function Home() {
       />
 
           {error && (
-            <div className="p-3 mb-6 border border-red-200 bg-red-50 text-red-700 text-sm animate-in">
+            <div className="p-3 mb-6 border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-400 text-sm animate-in">
               {error}
             </div>
           )}
@@ -255,7 +276,7 @@ export default function Home() {
 
           {view === 'compare' && compareData && <CompareResult data={compareData} />}
 
-          <footer className="text-xs text-gray-400 text-center mt-12 pt-5 border-t border-gray-100">
+          <footer className="text-xs text-gray-400 dark:text-gray-500 text-center mt-12 pt-5 border-t border-gray-100 dark:border-gray-800">
             <p>Baligacs (2026) &quot;Temporal Cliques Admit Linear Spanners&quot;</p>
             <p className="mt-1">Bu araç bağımsız ve ücretsizdir. Beğendiyseniz sağ üstteki butondan bir kahve ısmarlayabilirsiniz.</p>
           </footer>

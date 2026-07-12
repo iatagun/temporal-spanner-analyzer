@@ -15,7 +15,7 @@ export default function SpannerView({ result }) {
 
   return (
     <div className="animate-in">
-      <div className="border border-gray-200 rounded-lg bg-gray-50 p-4 mb-5 text-sm text-gray-700">
+      <div className="border border-gray-200 dark:border-gray-800 rounded-lg bg-gray-50 dark:bg-gray-900 p-4 mb-5 text-sm text-gray-700 dark:text-gray-300">
         <strong>{m.uploaded_edges} bağlantıdan {m.spanner_edges}&apos;ine indirildi</strong>
         {' '}&mdash; %{m.savings_pct} tasarruf ({getSavingsDescription(m.savings_pct)}).
         Tüm zamansal yollar korunuyor.
