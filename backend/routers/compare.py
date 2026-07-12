@@ -9,15 +9,27 @@ from backend.models import (
     EdgeSchema,
     MetricSchema,
 )
-from backend.services.graph_utils import build_static_adj, maximal_cliques
-from backend.services.spanner_service import compute_spanner_pipeline
+from backend.services.spanner_service import (
+    build_spanner_from_cliques,
+    enumerate_cliques,
+)
 
 router = APIRouter()
 
+SPANNER_MIN_CLIQUE_SIZE = 3
 
-def _maximal_cliques_from_graph(g: GraphSchema) -> list[set[str]]:
-    adj = build_static_adj(g)
-    return maximal_cliques(adj, min_size=2)
+
+def _enumerate_once(graph: GraphSchema) -> tuple[list[set[str]], list[set[str]], bool]:
+    """Bron-Kerbosch is the expensive step here, so it runs exactly once
+    per graph at the loosest size (>=2, needed for the Jaccard/clique-count
+    comparison). The size>=3 subset used for the spanner is then a cheap
+    filter over already-enumerated maximal cliques, not a second search --
+    maximality doesn't depend on the min-size threshold, so this is exactly
+    the set enumerate_cliques(graph, min_clique_size=3) would have found.
+    """
+    all_cliques, truncated = enumerate_cliques(graph, min_clique_size=2)
+    spanner_cliques = [c for c in all_cliques if len(c) >= SPANNER_MIN_CLIQUE_SIZE]
+    return all_cliques, spanner_cliques, truncated
 
 
 def _clique_jaccard(a: list[set[str]], b: list[set[str]]) -> float:
@@ -30,7 +42,9 @@ def _clique_jaccard(a: list[set[str]], b: list[set[str]]) -> float:
     return round(len(inter) / len(union), 3) if union else 1.0
 
 
-def _compute_spanner_response(req_graph: GraphSchema) -> SpannerResponse:
+def _compute_spanner_response(
+    req_graph: GraphSchema, cliques: list[set[str]], truncated: bool
+) -> SpannerResponse:
     V = set(req_graph.vertices)
     n = len(V)
 
@@ -50,8 +64,8 @@ def _compute_spanner_response(req_graph: GraphSchema) -> SpannerResponse:
             ),
         )
 
-    lbl, max_label, cliques, all_spanner_edges, clique_qualities, edges_covered, _ = (
-        compute_spanner_pipeline(req_graph)
+    lbl, max_label, all_spanner_edges, clique_qualities, _clique_pairs = (
+        build_spanner_from_cliques(req_graph, cliques)
     )
 
     uploaded_count = len(req_graph.edges)
@@ -96,14 +110,18 @@ def _compute_spanner_response(req_graph: GraphSchema) -> SpannerResponse:
             verified=all_verified,
             cliques_processed=len(cliques),
             clique_qualities=clique_qualities,
+            truncated=truncated,
         ),
     )
 
 
 @router.post("/compare", response_model=CompareResponse)
 def compare(req: CompareRequest):
-    s1 = _compute_spanner_response(req.graph1)
-    s2 = _compute_spanner_response(req.graph2)
+    c1, spanner_cliques1, c1_truncated = _enumerate_once(req.graph1)
+    c2, spanner_cliques2, c2_truncated = _enumerate_once(req.graph2)
+
+    s1 = _compute_spanner_response(req.graph1, spanner_cliques1, c1_truncated)
+    s2 = _compute_spanner_response(req.graph2, spanner_cliques2, c2_truncated)
 
     v1 = set(req.graph1.vertices)
     v2 = set(req.graph2.vertices)
@@ -126,8 +144,6 @@ def compare(req: CompareRequest):
     else:
         savings_compare = "Equal"
 
-    c1 = _maximal_cliques_from_graph(req.graph1)
-    c2 = _maximal_cliques_from_graph(req.graph2)
     clique_jaccard = _clique_jaccard(c1, c2)
 
     return CompareResponse(
@@ -146,5 +162,6 @@ def compare(req: CompareRequest):
             clique_jaccard=clique_jaccard,
             cliques_processed_1=s1.metrics.cliques_processed,
             cliques_processed_2=s2.metrics.cliques_processed,
+            truncated=c1_truncated or c2_truncated,
         ),
     )

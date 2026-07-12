@@ -40,6 +40,7 @@ class MetricSchema(BaseModel):
     pmi_threshold: float = 0.0
     stopwords_filtered: int = 0
     clique_qualities: List[CliqueQualitySchema] = []
+    truncated: bool = False
 
 
 class SpannerResponse(BaseModel):
@@ -88,6 +89,7 @@ class TrendResponse(BaseModel):
     timelines: List[CliqueTimeline]
     time_range: List[float]
     window_edges: List[int]
+    truncated: bool = False
 
 
 class CompareRequest(BaseModel):
@@ -110,6 +112,7 @@ class CompareMetricSchema(BaseModel):
     clique_jaccard: float = 0.0
     cliques_processed_1: int = 0
     cliques_processed_2: int = 0
+    truncated: bool = False
 
 
 class CompareResponse(BaseModel):

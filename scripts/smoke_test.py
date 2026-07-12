@@ -1,3 +1,7 @@
+# Manual smoke test against a *running* local backend. Not part of the
+# pytest suite (that's tests/) -- start the server first:
+#   python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000
+# then: python scripts/smoke_test.py
 import urllib.request, json, random
 
 API = 'http://127.0.0.1:8000'

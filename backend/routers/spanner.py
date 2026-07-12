@@ -1,6 +1,9 @@
+import csv
 import io
+import os
 import uuid
 from collections import deque
+from xml.sax.saxutils import escape as xml_escape
 
 from fastapi import APIRouter, UploadFile, File, HTTPException
 from fastapi.responses import Response
@@ -20,6 +23,7 @@ from backend.services.spanner_service import compute_spanner_pipeline
 router = APIRouter()
 
 PMI_THRESHOLD_DEFAULT = 0.0
+MAX_UPLOAD_BYTES = int(os.getenv("MAX_UPLOAD_BYTES", str(5 * 1024 * 1024)))
 
 
 def _shortest_temporal_path_len(
@@ -100,7 +104,7 @@ def compute_spanner(req: SpannerRequest) -> SpannerResponse:
             ),
         )
 
-    lbl, max_label, cliques, all_spanner_edges, clique_qualities, edges_covered, clique_pairs = (
+    lbl, max_label, cliques, all_spanner_edges, clique_qualities, clique_pairs, truncated = (
         compute_spanner_pipeline(req.graph, min_clique_size=req.min_clique_size, max_cliques=req.max_cliques)
     )
 
@@ -157,8 +161,27 @@ def compute_spanner(req: SpannerRequest) -> SpannerResponse:
             cliques_processed=len(cliques),
             pmi_threshold=PMI_THRESHOLD_DEFAULT,
             clique_qualities=clique_qualities,
+            truncated=truncated,
         ),
     )
+
+
+def _read_upload_bounded(file: UploadFile, max_bytes: int) -> bytes:
+    chunks: list[bytes] = []
+    total = 0
+    chunk_size = 1024 * 1024
+    while True:
+        chunk = file.file.read(chunk_size)
+        if not chunk:
+            break
+        total += len(chunk)
+        if total > max_bytes:
+            raise HTTPException(
+                413,
+                f"File exceeds the {max_bytes // (1024 * 1024)}MB upload limit",
+            )
+        chunks.append(chunk)
+    return b"".join(chunks)
 
 
 @router.post("/upload", response_model=UploadResponse)
@@ -166,7 +189,7 @@ def upload_csv(file: UploadFile = File(...)):
     if not file.filename:
         raise HTTPException(400, "File is required")
 
-    content = file.file.read()
+    content = _read_upload_bounded(file, MAX_UPLOAD_BYTES)
     ext = file.filename.lower()
 
     is_json = ext.endswith(".json")
@@ -227,9 +250,10 @@ def export_graph(req: SpannerRequest, fmt: str = "json"):
         )
     elif fmt == "csv":
         buf = io.StringIO()
-        buf.write("source,target,label\n")
+        writer = csv.writer(buf)
+        writer.writerow(["source", "target", "label"])
         for e in req.graph.edges:
-            buf.write(f"{e.u},{e.v},{e.label}\n")
+            writer.writerow([e.u, e.v, e.label])
         return Response(
             content=buf.getvalue(),
             media_type="text/csv",
@@ -243,10 +267,12 @@ def export_graph(req: SpannerRequest, fmt: str = "json"):
             '  <graph edgedefault="undirected">',
         ]
         for v in req.graph.vertices:
-            lines.append(f'    <node id="{v}"/>')
+            lines.append(f'    <node id="{xml_escape(v, {chr(34): "&quot;"})}"/>')
         for i, e in enumerate(req.graph.edges):
-            lines.append(f'    <edge id="e{i}" source="{e.u}" target="{e.v}">')
-            lines.append(f'      <data key="d0">{e.label}</data>')
+            u = xml_escape(e.u, {chr(34): "&quot;"})
+            v = xml_escape(e.v, {chr(34): "&quot;"})
+            lines.append(f'    <edge id="e{i}" source="{u}" target="{v}">')
+            lines.append(f'      <data key="d0">{xml_escape(str(e.label))}</data>')
             lines.append("    </edge>")
         lines.append("  </graph>")
         lines.append("</graphml>")

@@ -66,28 +66,44 @@ def _process_clique(
     )
 
 
-def compute_spanner_pipeline(
+def enumerate_cliques(
     graph: GraphSchema,
     min_clique_size: int = 3,
     max_cliques: int = 0,
+) -> tuple[list[set[str]], bool]:
+    """Bron-Kerbosch enumeration step, split out from spanner construction
+    so callers that need cliques at more than one min-size (e.g. /api/compare,
+    which wants size>=2 for Jaccard *and* size>=3 for the spanner) can run
+    this exponential-cost step once and filter, instead of re-enumerating.
+    """
+    adj = build_static_adj(graph)
+    # max_cliques bounds the Bron-Kerbosch search itself (not just a
+    # post-hoc slice), so a dense upload can't force unbounded enumeration
+    # before we ever get to trim the result.
+    cliques, truncated = maximal_cliques(
+        adj, min_size=min_clique_size, max_cliques=max_cliques
+    )
+    cliques = sorted(cliques, key=len, reverse=True)
+    if max_cliques > 0:
+        cliques = cliques[:max_cliques]
+    return cliques, truncated
+
+
+def build_spanner_from_cliques(
+    graph: GraphSchema,
+    cliques: list[set[str]],
 ) -> tuple[
     dict[tuple[str, str], float],
     float,
-    list[set[str]],
     set[tuple[str, str]],
     list[CliqueQualitySchema],
     set[tuple[str, str]],
-    set[tuple[str, str]],
 ]:
+    """Spanner construction step: given an already-enumerated clique list,
+    build the per-clique spanners and merge them. Polynomial in the size
+    of `cliques` -- the expensive part is enumerate_cliques(), not this.
+    """
     lbl, max_label = _build_label_dict(graph)
-
-    adj = build_static_adj(graph)
-    cliques = maximal_cliques(adj, min_size=min_clique_size)
-
-    if max_cliques > 0 and len(cliques) > max_cliques:
-        cliques = sorted(cliques, key=len, reverse=True)[:max_cliques]
-    else:
-        cliques = sorted(cliques, key=len, reverse=True)
 
     all_spanner_edges: set[tuple[str, str]] = set()
     clique_pairs: set[tuple[str, str]] = set()
@@ -101,4 +117,25 @@ def compute_spanner_pipeline(
         if key not in clique_pairs:
             all_spanner_edges.add(key)
 
-    return lbl, max_label, cliques, all_spanner_edges, clique_qualities, clique_pairs, clique_pairs
+    return lbl, max_label, all_spanner_edges, clique_qualities, clique_pairs
+
+
+def compute_spanner_pipeline(
+    graph: GraphSchema,
+    min_clique_size: int = 3,
+    max_cliques: int = 0,
+) -> tuple[
+    dict[tuple[str, str], float],
+    float,
+    list[set[str]],
+    set[tuple[str, str]],
+    list[CliqueQualitySchema],
+    set[tuple[str, str]],
+    set[tuple[str, str]],
+    bool,
+]:
+    cliques, truncated = enumerate_cliques(graph, min_clique_size, max_cliques)
+    lbl, max_label, all_spanner_edges, clique_qualities, clique_pairs = (
+        build_spanner_from_cliques(graph, cliques)
+    )
+    return lbl, max_label, cliques, all_spanner_edges, clique_qualities, clique_pairs, truncated

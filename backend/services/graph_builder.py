@@ -4,7 +4,7 @@ import json
 import math
 import re
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 from backend.models import EdgeSchema, GraphSchema
@@ -82,17 +82,31 @@ def _compute_pmi(
     return pmi
 
 
-_UNPARSED_DATE_SENTINEL = 0.0
+# Fallback numeric label for rows whose date could not be parsed (or was
+# never provided). Kept distinct from the *detection* of an unparsed date:
+# detection uses `parse_label(...) is None`, never a float comparison, so a
+# genuinely valid epoch-adjacent timestamp can never be mistaken for a
+# parse failure.
+_UNRESOLVED_LABEL_FALLBACK = 0.0
 
 
-def parse_label(raw: Any) -> float:
+def parse_label(raw: Any) -> float | None:
+    """Parse a date/timestamp-like value into a float label. Returns None
+    if `raw` could not be interpreted at all. All calendar dates are
+    parsed as UTC -- interpreting them in the server's local timezone
+    would make the resulting timestamps depend on where the process
+    happens to run, and would raise OSError on some platforms for
+    dates at/before the epoch in positive-UTC-offset locales.
+    """
     if isinstance(raw, (int, float)):
         return float(raw)
     raw = str(raw).strip()
+    if not raw:
+        return None
 
     if raw.isdigit() and len(raw) == 4:
         try:
-            return datetime.strptime(raw, "%Y").timestamp()
+            return datetime.strptime(raw, "%Y").replace(tzinfo=timezone.utc).timestamp()
         except ValueError:
             pass
 
@@ -103,10 +117,10 @@ def parse_label(raw: Any) -> float:
 
     for fmt in ("%Y-%m-%d", "%Y-%m-%d %H:%M:%S", "%Y-%m", "%d.%m.%Y", "%d/%m/%Y"):
         try:
-            return datetime.strptime(raw, fmt).timestamp()
+            return datetime.strptime(raw, fmt).replace(tzinfo=timezone.utc).timestamp()
         except ValueError:
             pass
-    return _UNPARSED_DATE_SENTINEL
+    return None
 
 
 def _words_to_edges_filtered(
@@ -128,8 +142,47 @@ def _words_to_edges_filtered(
                 edges.append(EdgeSchema(u=words[i], v=words[j], label=label))
 
 
+def _validate_date_coverage(collected: list[tuple[float | None, list[str]]]) -> None:
+    total_rows = len(collected)
+    unparsed_count = sum(1 for label_val, _ in collected if label_val is None)
+    if total_rows > 0 and unparsed_count / total_rows > 0.5:
+        raise ValueError(
+            f"More than 50% of dates ({unparsed_count}/{total_rows}) could not be parsed. "
+            "Supported formats: YYYY-MM-DD, DD.MM.YYYY, DD/MM/YYYY, or numeric timestamps."
+        )
+
+
+def _build_graph(
+    collected: list[tuple[float | None, list[str]]],
+    pmi_threshold: float,
+    validate_dates: bool,
+) -> tuple[GraphSchema, list[str], int]:
+    """Shared final stage for parse_csv/parse_json/parse_corpus_rows: PMI
+    computation + edge/vertex assembly. `collected` pairs a resolved label
+    (or None if unresolved) with its already stopword-filtered word list.
+    """
+    if validate_dates:
+        _validate_date_coverage(collected)
+
+    word_only_rows = [words for _, words in collected]
+    pmi = _compute_pmi(word_only_rows)
+
+    word_set: set[str] = set()
+    edges: list[EdgeSchema] = []
+    dates: list[str] = []
+    rows_parsed = 0
+
+    for label_val, words in collected:
+        label = label_val if label_val is not None else _UNRESOLVED_LABEL_FALLBACK
+        _words_to_edges_filtered(words, label, word_set, edges, dates, pmi, pmi_threshold)
+        rows_parsed += 1
+
+    graph = GraphSchema(vertices=sorted(word_set), edges=edges)
+    return graph, dates, rows_parsed
+
+
 def _collect_rows(rows: list[list[str]], date_idx: int, words_idx: int | None):
-    collected: list[tuple[float, list[str]]] = []
+    collected: list[tuple[float | None, list[str]]] = []
     stopword_count = 0
     for row in rows:
         if words_idx is not None:
@@ -156,7 +209,10 @@ def parse_csv(
 ) -> tuple[GraphSchema, list[str], int, int]:
     text = content.decode("utf-8-sig")
     reader = csv.reader(io.StringIO(text))
-    rows = list(reader)
+    try:
+        rows = list(reader)
+    except csv.Error as e:
+        raise ValueError(f"Could not parse CSV: {e}")
 
     if len(rows) < 2:
         raise ValueError("CSV must have a header row and at least one data row")
@@ -169,60 +225,33 @@ def parse_csv(
         collected, stopword_count = _collect_rows(rows[1:], date_idx, words_idx)
     else:
         test_date = parse_label(rows[0][0])
-        if test_date != _UNPARSED_DATE_SENTINEL:
+        if test_date is not None:
             collected, stopword_count = _collect_rows(rows, 0, None)
         else:
             collected, stopword_count = _collect_rows(rows[1:], 0, None)
 
-    word_only_rows = [words for _, words in collected]
-
-    unparsed_count = sum(1 for label_val, _ in collected if label_val == _UNPARSED_DATE_SENTINEL)
-    total_rows = len(collected)
-    if total_rows > 0 and unparsed_count / total_rows > 0.5:
-        raise ValueError(
-            f"More than 50% of dates ({unparsed_count}/{total_rows}) could not be parsed. "
-            "Supported formats: YYYY-MM-DD, DD.MM.YYYY, DD/MM/YYYY, or numeric timestamps."
-        )
-
-    pmi = _compute_pmi(word_only_rows)
-
-    word_set: set[str] = set()
-    edges: list[EdgeSchema] = []
-    dates: list[str] = []
-    rows_parsed = 0
-
-    for label_val, words in collected:
-        _words_to_edges_filtered(
-            words, label_val, word_set, edges, dates, pmi, pmi_threshold
-        )
-        rows_parsed += 1
-
-    V = sorted(word_set)
-    graph = GraphSchema(vertices=V, edges=edges)
+    graph, dates, rows_parsed = _build_graph(collected, pmi_threshold, validate_dates=True)
     return graph, dates, rows_parsed, stopword_count
 
 
 def parse_corpus_rows(
     rows: list[tuple[str, list[str]]], pmi_threshold: float = 0.0
 ) -> tuple[GraphSchema, list[str], int, int]:
-    collected: list[tuple[float, list[str]]] = []
+    collected: list[tuple[float | None, list[str]]] = []
     for date_str, words in rows:
-        label = parse_label(date_str) if date_str else parse_label("1970-01-01")
+        # An empty date_str means the corpus file carried no date metadata
+        # at all (no filename pattern, no #date comment) -- that's an
+        # expected condition for many corpora, not a parse failure, so it
+        # gets the fallback bucket directly rather than going through
+        # parse_label (which would otherwise have to special-case turning
+        # "no date" into a fake date string just to parse it back out).
+        label = parse_label(date_str) if date_str else _UNRESOLVED_LABEL_FALLBACK
         collected.append((label, words))
 
-    word_only_rows = [words for _, words in collected]
-    pmi = _compute_pmi(word_only_rows)
+    graph, dates, rows_parsed = _build_graph(collected, pmi_threshold, validate_dates=True)
+    return graph, dates, rows_parsed, 0
 
-    word_set: set[str] = set()
-    edges: list[EdgeSchema] = []
-    dates: list[str] = []
 
-    for label_val, words in collected:
-        _words_to_edges_filtered(words, label_val, word_set, edges, dates, pmi, pmi_threshold)
-
-    V = sorted(word_set)
-    graph = GraphSchema(vertices=V, edges=edges)
-    return graph, dates, len(collected), 0
 def parse_json(
     content: bytes, pmi_threshold: float = 0.0
 ) -> tuple[GraphSchema, list[str], int, int]:
@@ -230,7 +259,7 @@ def parse_json(
 
     docs = data if isinstance(data, list) else data.get("documents", data.get("data", []))
 
-    collected: list[tuple[float, list[str]]] = []
+    collected: list[tuple[float | None, list[str]]] = []
     stopword_count = 0
 
     for doc in docs:
@@ -263,29 +292,5 @@ def parse_json(
         if len(filtered) >= 2:
             collected.append((label_val, filtered))
 
-    word_only_rows = [words for _, words in collected]
-
-    unparsed_count = sum(1 for label_val, _ in collected if label_val == _UNPARSED_DATE_SENTINEL)
-    total_rows = len(collected)
-    if total_rows > 0 and unparsed_count / total_rows > 0.5:
-        raise ValueError(
-            f"More than 50% of dates ({unparsed_count}/{total_rows}) could not be parsed. "
-            "Supported formats: YYYY-MM-DD, DD.MM.YYYY, DD/MM/YYYY, or numeric timestamps."
-        )
-
-    pmi = _compute_pmi(word_only_rows)
-
-    word_set: set[str] = set()
-    edges: list[EdgeSchema] = []
-    dates: list[str] = []
-    rows_parsed = 0
-
-    for label_val, words in collected:
-        _words_to_edges_filtered(
-            words, label_val, word_set, edges, dates, pmi, pmi_threshold
-        )
-        rows_parsed += 1
-
-    V = sorted(word_set)
-    graph = GraphSchema(vertices=V, edges=edges)
+    graph, dates, rows_parsed = _build_graph(collected, pmi_threshold, validate_dates=True)
     return graph, dates, rows_parsed, stopword_count

@@ -16,7 +16,7 @@ def _jaccard(a: set, b: set) -> float:
 
 def compute_trends(graph: GraphSchema, windows: int = 10) -> TrendResponse:
     if not graph.edges:
-        return TrendResponse(timelines=[], time_range=[0, 0], window_edges=[])
+        return TrendResponse(timelines=[], time_range=[0, 0], window_edges=[], truncated=False)
 
     sorted_edges = sorted(graph.edges, key=lambda e: e.label)
     edge_labels = [e.label for e in sorted_edges]
@@ -30,6 +30,7 @@ def compute_trends(graph: GraphSchema, windows: int = 10) -> TrendResponse:
 
     window_edges: list[int] = []
     window_cliques: list[list[set[str]]] = []
+    any_truncated = False
 
     for w in range(windows):
         ws = t_min + w * step
@@ -52,7 +53,8 @@ def compute_trends(graph: GraphSchema, windows: int = 10) -> TrendResponse:
             window_adj[u].add(v)
             window_adj[v].add(u)
 
-        cliques = maximal_cliques(window_adj, min_size=2)
+        cliques, truncated = maximal_cliques(window_adj, min_size=2)
+        any_truncated = any_truncated or truncated
         window_cliques.append(cliques)
 
     timelines: list[CliqueTimeline] = []
@@ -121,4 +123,5 @@ def compute_trends(graph: GraphSchema, windows: int = 10) -> TrendResponse:
         timelines=timelines,
         time_range=[round(t_min, 4), round(t_max, 4)],
         window_edges=window_edges,
+        truncated=any_truncated,
     )

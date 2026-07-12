@@ -43,6 +43,20 @@ def test_upload_empty_csv():
     assert r.status_code == 400
 
 
+def test_upload_rejects_oversized_file(monkeypatch):
+    monkeypatch.setattr("backend.routers.spanner.MAX_UPLOAD_BYTES", 10)
+    r = client.post("/api/upload", files={"file": ("test.csv", b"date,words\n" + b"a" * 100, "text/csv")})
+    assert r.status_code == 413
+
+
+def test_upload_oversized_csv_field_is_400_not_500():
+    # A single CSV field wider than Python's csv module default limit
+    # (131072 bytes) used to raise an uncaught csv.Error -> 500.
+    huge_field = b"date,words\n2020-01-01," + b"a " * 100_000
+    r = client.post("/api/upload", files={"file": ("huge.csv", huge_field, "text/csv")})
+    assert r.status_code == 400
+
+
 def test_spanner_empty_graph():
     g = {"vertices": ["a"], "edges": []}
     r = client.post("/api/spanner", json={"graph": g})
@@ -70,6 +84,22 @@ def test_export_graphml():
     r = client.post("/api/export?fmt=graphml", json={"graph": g})
     assert r.status_code == 200
     assert "<graphml" in r.text
+
+
+def test_export_graphml_escapes_special_chars():
+    g = {"vertices": ["a&b", 'c<d>"e'], "edges": [{"u": "a&b", "v": 'c<d>"e', "label": 1.0}]}
+    r = client.post("/api/export?fmt=graphml", json={"graph": g})
+    assert r.status_code == 200
+    assert "a&amp;b" in r.text
+    assert "c&lt;d&gt;&quot;e" in r.text
+    assert "<d>" not in r.text
+
+
+def test_export_csv_quotes_commas():
+    g = {"vertices": ["x,y", "z"], "edges": [{"u": "x,y", "v": "z", "label": 1.0}]}
+    r = client.post("/api/export?fmt=csv", json={"graph": g})
+    assert r.status_code == 200
+    assert '"x,y"' in r.text
 
 
 def test_health():
