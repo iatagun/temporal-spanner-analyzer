@@ -44,12 +44,19 @@ function buildCyStyles(isDark) {
   ];
 }
 
-const layout = {
-  name: 'cose',
-  animate: false,
-  nodeRepulsion: 400000,
-  idealEdgeLength: 100,
-};
+// cytoscape's 'cose' layout is a force-directed physics simulation --
+// benchmarked at ~200ms for 100 nodes, ~4s for 500, ~16s for 1000, and
+// ~62s for 2000 (roughly O(n^2)). A few-thousand-vertex corpus graph
+// would take minutes and hang the tab. 'grid' has no physics simulation
+// (~90ms even at 4000+ nodes) -- far less pretty, but the only option
+// that stays usable at that scale.
+const COSE_NODE_LIMIT = 300;
+
+function layoutFor(nodeCount) {
+  return nodeCount > COSE_NODE_LIMIT
+    ? { name: 'grid', animate: false }
+    : { name: 'cose', animate: false, nodeRepulsion: 400000, idealEdgeLength: 100 };
+}
 
 export default function GraphViewer({ graph, label, height = 400, colorMap }) {
   const cyRef = useRef(null);
@@ -87,15 +94,24 @@ export default function GraphViewer({ graph, label, height = 400, colorMap }) {
     );
   }
 
+  const isLarge = graph.vertices.length > COSE_NODE_LIMIT;
+
   return (
     <div>
-      <div className="mb-1.5 text-xs text-gray-500 dark:text-gray-400">{label}</div>
+      <div className="mb-1.5 text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
+        {label}
+        {isLarge && (
+          <span className="text-gray-400 dark:text-gray-500" title="Büyük grafiklerde tarayıcıyı kilitleyen fizik-tabanlı yerleşim yerine hızlı bir ızgara düzeni kullanılır.">
+            (büyük grafik: hızlı düzen)
+          </span>
+        )}
+      </div>
       <div style={{ height }} className="border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden bg-white dark:bg-gray-950">
         <CytoscapeComponent
           elements={elements}
           style={{ width: '100%', height: '100%' }}
           stylesheet={cyStyles}
-          layout={layout}
+          layout={layoutFor(graph.vertices.length)}
           cy={(cy) => { cyRef.current = cy; }}
         />
       </div>

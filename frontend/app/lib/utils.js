@@ -83,19 +83,25 @@ export function filterGraph(graph, tMin, tMax, freq) {
   });
   const vSet = new Set();
   filtered.forEach(e => { vSet.add(e.u); vSet.add(e.v); });
-  let vertices = [...vSet];
 
-  if (freq > 1) {
-    const degree = {};
-    filtered.forEach(e => {
-      degree[e.u] = (degree[e.u] || 0) + 1;
-      degree[e.v] = (degree[e.v] || 0) + 1;
-    });
-    vertices = vertices.filter(v => (degree[v] || 0) >= freq);
+  if (freq <= 1) {
+    // Every edge in `filtered` connects two vertices already in vSet by
+    // construction, so there is nothing left to filter out.
+    return { vertices: [...vSet], edges: filtered };
   }
 
-  const edges = filtered.filter(e => vertices.includes(e.u) && vertices.includes(e.v));
-  return { vertices, edges };
+  const degree = {};
+  filtered.forEach(e => {
+    degree[e.u] = (degree[e.u] || 0) + 1;
+    degree[e.v] = (degree[e.v] || 0) + 1;
+  });
+  const vertexSet = new Set([...vSet].filter(v => (degree[v] || 0) >= freq));
+
+  // Sets give O(1) membership checks -- the previous version used
+  // Array.includes() here, an O(V) scan per edge (O(E*V) overall), which
+  // measurably added up for corpus-sized graphs (thousands of vertices).
+  const edges = filtered.filter(e => vertexSet.has(e.u) && vertexSet.has(e.v));
+  return { vertices: [...vertexSet], edges };
 }
 
 export function getSavingsDescription(pct) {

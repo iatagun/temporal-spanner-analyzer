@@ -98,15 +98,25 @@ export default function Home() {
       const data = await uploadCSV(file, pmiThreshold);
       setFullGraph(data.graph);
       const tr = data.time_range.filter(t => t !== '').map(Number);
+      // The initial spanner computation must match the same 40%-window
+      // default that currentGraph settles on and that the UI already
+      // displays as "Spanner (Nv, Ee)" -- computing (and rendering) the
+      // full, un-filtered graph here instead used to silently ignore that
+      // default: a large corpus (thousands of vertices) would run
+      // GraphViewer's cytoscape layout on the entire graph immediately
+      // after upload, which can take minutes (cose is roughly O(n^2)).
+      let initialGraph = data.graph;
       if (tr.length >= 2) {
         setTimeRange(tr);
         const fullMin = Math.min(...tr);
         const fullMax = Math.max(...tr);
         const range = fullMax - fullMin;
+        const initialMax = fullMin + range * 0.4;
         setTimeMin(fullMin);
-        setTimeMax(fullMin + range * 0.4);
+        setTimeMax(initialMax);
         setTimeMin2(fullMin + range * 0.6);
         setTimeMax2(fullMax);
+        initialGraph = filterGraph(data.graph, fullMin, initialMax, minFreq);
       } else {
         setTimeRange(null);
       }
@@ -115,7 +125,7 @@ export default function Home() {
         label: `${data.graph.vertices.length} düğüm, ${data.graph.edges.length} bağlantı`,
       });
       setResult(null);
-      doSpanner(data.graph);
+      doSpanner(initialGraph);
     } catch (e) {
       setError(e.message);
     } finally {
