@@ -37,9 +37,12 @@ export function computeCompare(graph1, graph2) {
   return post('/api/compare', { graph1, graph2 });
 }
 
-export function uploadCSV(file) {
+export function uploadCSV(file, pmiThreshold) {
   const fd = new FormData();
   fd.append('file', file);
+  if (pmiThreshold !== undefined && pmiThreshold !== null) {
+    fd.append('pmi_threshold', String(pmiThreshold));
+  }
   return upload('/api/upload', fd);
 }
 

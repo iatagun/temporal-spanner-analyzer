@@ -51,10 +51,33 @@ def _is_not_stopword(w: str) -> bool:
     return w not in TURKISH_STOPWORDS and len(w) > 1
 
 
+# Universal-POS content-word categories. Used to filter function words
+# (conjunctions, particles, pronouns, ...) out of the co-occurrence graph
+# when a corpus format supplies POS tags (CoNLL-U/VRT); this is
+# language-agnostic, unlike TURKISH_STOPWORDS below.
+CONTENT_POS: set[str] = {"NOUN", "PROPN", "VERB", "ADJ"}
+
+
+def _is_content_word(word: str, pos: str = "") -> bool:
+    """POS-based content-word filter when a POS tag is available (CoNLL-U/
+    VRT); falls back to the Turkish stopword list when it isn't (CSV/JSON
+    have no POS info)."""
+    if pos:
+        return pos.upper() in CONTENT_POS and len(word) > 1
+    return _is_not_stopword(word)
+
+
 def _compute_pmi(
     word_rows: list[list[str]],
-    min_codf: int = 1,
+    min_codf: int = 2,
 ) -> dict[tuple[str, str], float]:
+    """Normalized PMI (NPMI), bounded to [-1, 1]. Plain PMI is well known to
+    over-weight rare pairs (a pair seen twice out of two documents can score
+    higher than a pair seen 500 times out of 1000) -- exactly the failure
+    mode a small/sparse corpus hits most. NPMI divides that out; min_codf
+    additionally drops pairs seen fewer than min_codf times so single
+    coincidental co-occurrences don't produce a spurious edge at all.
+    """
     N = len(word_rows)
     if N < 2:
         return {}
@@ -72,14 +95,22 @@ def _compute_pmi(
                 key = (sorted_unique[i], sorted_unique[j])
                 codf[key] += 1
 
-    pmi: dict[tuple[str, str], float] = {}
+    npmi: dict[tuple[str, str], float] = {}
     for (w1, w2), codf_val in codf.items():
         if codf_val < min_codf:
             continue
-        ratio = N * codf_val / (df[w1] * df[w2])
-        pmi[(w1, w2)] = math.log(ratio) if ratio > 0 else -float("inf")
+        p_xy = codf_val / N
+        p_x = df[w1] / N
+        p_y = df[w2] / N
+        pmi = math.log(p_xy / (p_x * p_y))
+        if p_xy >= 1.0:
+            # Co-occurs in every row -- the -log(p_xy) normalizer is 0/0.
+            # Convention: maximal (positive) association is 1.0.
+            npmi[(w1, w2)] = 1.0
+        else:
+            npmi[(w1, w2)] = pmi / -math.log(p_xy)
 
-    return pmi
+    return npmi
 
 
 # Fallback numeric label for rows whose date could not be parsed (or was
@@ -235,10 +266,11 @@ def parse_csv(
 
 
 def parse_corpus_rows(
-    rows: list[tuple[str, list[str]]], pmi_threshold: float = 0.0
+    rows: list[tuple[str, list[tuple[str, str]]]], pmi_threshold: float = 0.0
 ) -> tuple[GraphSchema, list[str], int, int]:
     collected: list[tuple[float | None, list[str]]] = []
-    for date_str, words in rows:
+    stopword_count = 0
+    for date_str, word_pos_pairs in rows:
         # An empty date_str means the corpus file carried no date metadata
         # at all (no filename pattern, no #date comment) -- that's an
         # expected condition for many corpora, not a parse failure, so it
@@ -246,10 +278,14 @@ def parse_corpus_rows(
         # parse_label (which would otherwise have to special-case turning
         # "no date" into a fake date string just to parse it back out).
         label = parse_label(date_str) if date_str else _UNRESOLVED_LABEL_FALLBACK
-        collected.append((label, words))
+
+        filtered = [w for w, pos in word_pos_pairs if _is_content_word(w, pos)]
+        stopword_count += len(word_pos_pairs) - len(filtered)
+        if len(filtered) >= 2:
+            collected.append((label, filtered))
 
     graph, dates, rows_parsed = _build_graph(collected, pmi_threshold, validate_dates=True)
-    return graph, dates, rows_parsed, 0
+    return graph, dates, rows_parsed, stopword_count
 
 
 def parse_json(

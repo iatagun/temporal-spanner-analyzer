@@ -6,13 +6,58 @@ client = TestClient(app)
 
 
 def test_upload_csv_success():
-    csv_content = b"date,words\n2020-01-05,\"yapay,zeka\"\n2020-03-12,\"yapay,ogrenme\"\n"
+    # NPMI + min_codf=2 (see graph_builder._compute_pmi) means a pair needs
+    # to co-occur more than once, and not in literally every row, to score
+    # as an edge -- "kedi,kopek" is included as a second, unrelated pair so
+    # "yapay" isn't in 100% of rows (which would make it uninformative and
+    # zero out its own pairs' NPMI).
+    csv_content = (
+        b"date,words\n"
+        b"2020-01-05,\"yapay,zeka\"\n"
+        b"2020-02-01,\"yapay,zeka\"\n"
+        b"2020-03-12,\"yapay,ogrenme\"\n"
+        b"2020-04-01,\"yapay,ogrenme\"\n"
+        b"2020-05-01,\"kedi,kopek\"\n"
+        b"2020-06-01,\"kedi,kopek\"\n"
+    )
     r = client.post("/api/upload", files={"file": ("test.csv", csv_content, "text/csv")})
     assert r.status_code == 200
     d = r.json()
-    assert d["rows_parsed"] == 2
-    assert len(d["graph"]["vertices"]) == 3
-    assert len(d["graph"]["edges"]) == 2
+    assert d["rows_parsed"] == 6
+    assert set(d["graph"]["vertices"]) == {"yapay", "zeka", "ogrenme", "kedi", "kopek"}
+    edge_pairs = {(e["u"], e["v"]) if e["u"] <= e["v"] else (e["v"], e["u"]) for e in d["graph"]["edges"]}
+    assert edge_pairs == {("yapay", "zeka"), ("ogrenme", "yapay"), ("kedi", "kopek")}
+
+
+def test_upload_pmi_threshold_form_field_is_applied():
+    # Regression test: SpannerRequest.pmi_threshold used to be accepted by
+    # the schema but never read by any endpoint, while /api/upload always
+    # used a hardcoded module constant regardless of what was sent. The
+    # threshold must now actually change which edges survive.
+    csv_content = (
+        b"date,words\n"
+        b"2020-01-05,\"yapay,zeka\"\n"
+        b"2020-02-01,\"yapay,zeka\"\n"
+        b"2020-03-12,\"yapay,ogrenme\"\n"
+        b"2020-04-01,\"yapay,ogrenme\"\n"
+        b"2020-05-01,\"kedi,kopek\"\n"
+        b"2020-06-01,\"kedi,kopek\"\n"
+    )
+    r_loose = client.post(
+        "/api/upload",
+        files={"file": ("test.csv", csv_content, "text/csv")},
+        data={"pmi_threshold": "-1.0"},
+    )
+    r_strict = client.post(
+        "/api/upload",
+        files={"file": ("test.csv", csv_content, "text/csv")},
+        data={"pmi_threshold": "0.99"},
+    )
+    assert r_loose.status_code == 200 and r_strict.status_code == 200
+    loose_edges = len(r_loose.json()["graph"]["edges"])
+    strict_edges = len(r_strict.json()["graph"]["edges"])
+    assert loose_edges > strict_edges
+    assert r_strict.json()["pmi_threshold"] == 0.99
 
 
 def test_upload_json_success():

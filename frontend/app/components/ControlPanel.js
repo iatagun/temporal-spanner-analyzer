@@ -5,6 +5,7 @@ import { useRef, useState } from 'react';
 export default function ControlPanel({
   loading, onUpload, minFreq, setMinFreq, onSample,
   minCliqueSize, setMinCliqueSize, maxCliques, setMaxCliques,
+  pmiThreshold, setPmiThreshold,
   showAdvanced, setShowAdvanced,
 }) {
   const fileRef = useRef(null);
@@ -105,6 +106,14 @@ export default function ControlPanel({
               onChange={e => setMaxCliques(Math.max(0, Number(e.target.value)))}
               placeholder="0=sınırsız"
               className="w-20 px-2 py-1.5 border border-gray-200 rounded text-xs bg-white"
+            />
+          </label>
+          <label className="flex items-center gap-2 text-xs text-gray-500" title="Kelime çifti birlikteliğinin (NPMI, -1..1) grafiğe kenar olarak girmesi için gereken minimum anlamlılık skoru. Yükleme sırasında uygulanır, dosyayı yeniden yüklemeniz gerekir.">
+            PMI Eşiği
+            <input
+              type="number" min={-1} max={1} step={0.05} value={pmiThreshold}
+              onChange={e => setPmiThreshold(Math.min(1, Math.max(-1, Number(e.target.value))))}
+              className="w-16 px-2 py-1.5 border border-gray-200 rounded text-xs bg-white"
             />
           </label>
         </div>

@@ -34,6 +34,7 @@ export default function Home() {
   const [compareLoading, setCompareLoading] = useState(false);
   const [minCliqueSize, setMinCliqueSize] = useState(3);
   const [maxCliques, setMaxCliques] = useState(0);
+  const [pmiThreshold, setPmiThreshold] = useState(0.15);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const debounceRef = useRef(null);
 
@@ -94,7 +95,7 @@ export default function Home() {
       if (!file) { setError('Dosya seçin'); return; }
     setLoading(true); setError(null);
     try {
-      const data = await uploadCSV(file);
+      const data = await uploadCSV(file, pmiThreshold);
       setFullGraph(data.graph);
       const tr = data.time_range.filter(t => t !== '').map(Number);
       if (tr.length >= 2) {
@@ -181,6 +182,8 @@ export default function Home() {
         setMinCliqueSize={setMinCliqueSize}
         maxCliques={maxCliques}
         setMaxCliques={setMaxCliques}
+        pmiThreshold={pmiThreshold}
+        setPmiThreshold={setPmiThreshold}
         showAdvanced={showAdvanced}
         setShowAdvanced={setShowAdvanced}
       />

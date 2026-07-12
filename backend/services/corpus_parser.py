@@ -25,9 +25,12 @@ def _detect_date_from_filename(filename: str) -> str | None:
     return None
 
 
-def parse_conllu(content: str, filename: str = "") -> list[tuple[str, list[str]]]:
-    rows: list[tuple[str, list[str]]] = []
-    current_words: list[str] = []
+def parse_conllu(content: str, filename: str = "") -> list[tuple[str, list[tuple[str, str]]]]:
+    """Returns (date, [(word, upos), ...]) per sentence. UPOS (column 4) is
+    kept alongside the lemma so callers can filter to content words --
+    it used to be parsed and immediately discarded."""
+    rows: list[tuple[str, list[tuple[str, str]]]] = []
+    current_words: list[tuple[str, str]] = []
     current_date: str | None = _detect_date_from_filename(filename) or ""
 
     for line in content.split("\n"):
@@ -64,8 +67,9 @@ def parse_conllu(content: str, filename: str = "") -> list[tuple[str, list[str]]
             continue
 
         word = cols[2].strip() if cols[2].strip() and cols[2] != "_" else cols[1].strip()
+        upos = cols[3].strip() if cols[3].strip() != "_" else ""
         if word and word != "_":
-            current_words.append(word)
+            current_words.append((word, upos))
 
     if current_words:
         rows.append((current_date, current_words))
@@ -73,9 +77,14 @@ def parse_conllu(content: str, filename: str = "") -> list[tuple[str, list[str]]
     return rows
 
 
-def parse_vrt(content: str, filename: str = "") -> list[tuple[str, list[str]]]:
-    rows: list[tuple[str, list[str]]] = []
-    current_words: list[str] = []
+def parse_vrt(content: str, filename: str = "") -> list[tuple[str, list[tuple[str, str]]]]:
+    """Returns (date, [(word, pos), ...]) per document. VRT lines commonly
+    carry word\\tlemma\\tpos; when a lemma column is present it's used
+    instead of the raw form (reduces sparsity from inflection), and the
+    pos column (if present) is kept for content-word filtering. Falls back
+    to word-only when the file has no extra columns."""
+    rows: list[tuple[str, list[tuple[str, str]]]] = []
+    current_words: list[tuple[str, str]] = []
     current_date: str = _detect_date_from_filename(filename) or ""
     in_document = False
 
@@ -107,8 +116,12 @@ def parse_vrt(content: str, filename: str = "") -> list[tuple[str, list[str]]]:
 
         parts = line.split("\t")
         word = parts[0].strip() if parts else ""
-        if word and not word.startswith("<"):
-            current_words.append(word)
+        if not word or word.startswith("<"):
+            continue
+
+        lemma = parts[1].strip() if len(parts) > 1 and parts[1].strip() not in ("", "_") else word
+        pos = parts[2].strip() if len(parts) > 2 and parts[2].strip() != "_" else ""
+        current_words.append((lemma, pos))
 
     if current_words and in_document:
         rows.append((current_date, current_words))
@@ -118,7 +131,7 @@ def parse_vrt(content: str, filename: str = "") -> list[tuple[str, list[str]]]:
 
 def detect_and_parse(
     content: str, filename: str = ""
-) -> tuple[list[tuple[str, list[str]]], str, dict]:
+) -> tuple[list[tuple[str, list[tuple[str, str]]]], str, dict]:
     ext = Path(filename).suffix.lower()
 
     metadata = {

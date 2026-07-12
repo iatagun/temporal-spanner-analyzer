@@ -5,7 +5,7 @@ import uuid
 from collections import deque
 from xml.sax.saxutils import escape as xml_escape
 
-from fastapi import APIRouter, UploadFile, File, HTTPException
+from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 from fastapi.responses import Response
 
 from backend.models import (
@@ -22,7 +22,12 @@ from backend.services.spanner_service import compute_spanner_pipeline
 
 router = APIRouter()
 
-PMI_THRESHOLD_DEFAULT = 0.0
+# NPMI is bounded to [-1, 1] (see graph_builder._compute_pmi); 0.15 is a
+# small positive floor that drops chance-level and weakly-associated pairs
+# while keeping real collocations. Actually wired to /api/upload's
+# pmi_threshold form field below -- it used to be a hardcoded constant that
+# silently ignored whatever the request sent.
+PMI_THRESHOLD_DEFAULT = 0.15
 MAX_UPLOAD_BYTES = int(os.getenv("MAX_UPLOAD_BYTES", str(5 * 1024 * 1024)))
 
 
@@ -185,7 +190,10 @@ def _read_upload_bounded(file: UploadFile, max_bytes: int) -> bytes:
 
 
 @router.post("/upload", response_model=UploadResponse)
-def upload_csv(file: UploadFile = File(...)):
+def upload_csv(
+    file: UploadFile = File(...),
+    pmi_threshold: float = Form(PMI_THRESHOLD_DEFAULT),
+):
     if not file.filename:
         raise HTTPException(400, "File is required")
 
@@ -212,17 +220,16 @@ def upload_csv(file: UploadFile = File(...)):
                     "CoNLL-U: tab-separated columns with word/lemma in column 2/3. "
                     "VRT: <text> tags with tab-separated word lines."
                 )
-            graph, dates, rows_parsed, _ = parse_corpus_rows(
-                rows, pmi_threshold=PMI_THRESHOLD_DEFAULT
+            graph, dates, rows_parsed, stopwords_filtered = parse_corpus_rows(
+                rows, pmi_threshold=pmi_threshold
             )
-            stopwords_filtered = 0
         elif is_json:
             graph, dates, rows_parsed, stopwords_filtered = parse_json(
-                content, pmi_threshold=PMI_THRESHOLD_DEFAULT
+                content, pmi_threshold=pmi_threshold
             )
         else:
             graph, dates, rows_parsed, stopwords_filtered = parse_csv(
-                content, pmi_threshold=PMI_THRESHOLD_DEFAULT
+                content, pmi_threshold=pmi_threshold
             )
     except ValueError as e:
         raise HTTPException(400, str(e))
@@ -235,6 +242,7 @@ def upload_csv(file: UploadFile = File(...)):
         rows_parsed=rows_parsed,
         time_range=[min(dates), max(dates)] if dates else ["", ""],
         stopwords_filtered=stopwords_filtered,
+        pmi_threshold=pmi_threshold,
     )
 
 

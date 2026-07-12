@@ -17,7 +17,6 @@ class SpannerRequest(BaseModel):
     graph: GraphSchema
     min_clique_size: int = 3
     max_cliques: int = 0
-    pmi_threshold: float = 0.0
 
 
 class CliqueQualitySchema(BaseModel):
@@ -61,6 +60,7 @@ class UploadResponse(BaseModel):
     rows_parsed: int
     time_range: List[str]
     stopwords_filtered: int = 0
+    pmi_threshold: float = 0.0
 
 
 class CliqueSnapshot(BaseModel):
