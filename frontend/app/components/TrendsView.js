@@ -4,6 +4,7 @@ import { useRef, useEffect, useMemo, useState } from 'react';
 import * as d3 from 'd3';
 import { formatTime } from '../lib/utils';
 import { getCliqueColor, prefersDark, CLIQUE_PALETTE } from '../lib/palette';
+import TruncatedWarning from './TruncatedWarning';
 
 export default function TrendsView({ data, height = 300 }) {
   const svgRef = useRef(null);
@@ -110,6 +111,7 @@ export default function TrendsView({ data, height = 300 }) {
 
   return (
     <div>
+      {data.truncated && <TruncatedWarning />}
       <div className="flex gap-4 mb-4 flex-wrap items-center text-xs text-gray-500 dark:text-gray-400">
         <span><strong className="text-gray-900 dark:text-gray-100">{timelines.length}</strong> klik zamansalı</span>
         <span>{formatTime(timeRange[0])} &mdash; {formatTime(timeRange[1])}</span>

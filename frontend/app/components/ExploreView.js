@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react';
 import { formatTime } from '../lib/utils';
 import { searchWordCliques, checkClique } from '../lib/api';
+import TruncatedWarning from './TruncatedWarning';
 
 export default function ExploreView({ fullGraph, onSample }) {
   const hasGraph = fullGraph && fullGraph.vertices && fullGraph.vertices.length > 0;
@@ -80,6 +81,7 @@ export default function ExploreView({ fullGraph, onSample }) {
           {wordError && <div className="p-3 mb-4 border border-red-200 dark:border-red-900 rounded-md bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-400 text-sm animate-in">{wordError}</div>}
           {wordData && (
             <div>
+              {wordData.truncated && <TruncatedWarning />}
               <div className="text-sm text-gray-500 dark:text-gray-400 mb-4">
                 <strong className="text-gray-900 dark:text-gray-100">&ldquo;{wordData.word}&rdquo;</strong>:
                 {wordData.cliques.length} klik, {wordData.total_snapshots} anlık-görüntü

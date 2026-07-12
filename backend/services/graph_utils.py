@@ -30,14 +30,20 @@ def build_static_adj(graph: GraphSchema) -> dict[str, set[str]]:
 def maximal_cliques(
     adj: dict[str, set[str]],
     min_size: int = 3,
-    max_cliques: int = 0,
     budget: int = DEFAULT_SEARCH_BUDGET,
 ) -> tuple[list[set[str]], bool]:
     """Enumerate maximal cliques of size >= min_size via Bron-Kerbosch
     (Tomita pivot). Returns (cliques, truncated) — truncated is True when
-    the search stopped early because it hit `max_cliques` results or the
-    recursive-call `budget`, meaning the result is a partial (but still
-    valid) set of maximal cliques rather than the complete enumeration.
+    the search stopped early because it hit the recursive-call `budget`,
+    meaning the result is a partial (but still valid) set of maximal
+    cliques rather than the complete enumeration.
+
+    Deliberately has no "stop after N cliques" option: an early count-based
+    stop would return whatever the DFS traversal reached first, not the N
+    largest cliques, silently mislabeling an arbitrary subset as if it were
+    a meaningful top-N. Callers that want the top N by size (e.g.
+    spanner_service.enumerate_cliques) should enumerate fully (bounded only
+    by `budget`) and then sort+slice.
     """
     cliques: list[set[str]] = []
     state = {"truncated": False, "calls": 0}
@@ -49,9 +55,6 @@ def maximal_cliques(
             return
         state["calls"] += 1
         if state["calls"] > budget:
-            state["truncated"] = True
-            return
-        if max_cliques > 0 and len(cliques) >= max_cliques:
             state["truncated"] = True
             return
         if len(R) + len(P) < min_size:

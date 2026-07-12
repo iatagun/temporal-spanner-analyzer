@@ -50,3 +50,7 @@ def test_word_cliques():
     assert d["word"] == "a"
     assert "cliques" in d
     assert d["total_snapshots"] > 0
+    # Regression test: WordCliqueResponse used to have no `truncated` field
+    # at all, even though it runs the same compute_trends() pipeline as
+    # /api/trends (which does report truncated).
+    assert d["truncated"] is False

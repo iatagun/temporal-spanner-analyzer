@@ -49,6 +49,20 @@ def test_compare_identical_graphs():
     assert d["comparison"]["savings_compare"] == "Equal"
 
 
+def test_compare_stretch_factor_matches_spanner_endpoint():
+    # Regression test: compare.py used to hand-roll its own SpannerResponse
+    # assembly, and its n<2 branch silently omitted stretch_factor (always
+    # None) while /api/spanner's equivalent branch returned 1.0 -- the two
+    # endpoints disagreed on the same conceptual case. Both now share
+    # spanner_service.build_spanner_response.
+    g = {"vertices": ["a"], "edges": []}
+    r_spanner = client.post("/api/spanner", json={"graph": g})
+    r_compare = client.post("/api/compare", json={"graph1": g, "graph2": g})
+    assert r_spanner.json()["metrics"]["stretch_factor"] == 1.0
+    assert r_compare.json()["spanner1"]["metrics"]["stretch_factor"] == 1.0
+    assert r_compare.json()["spanner2"]["metrics"]["stretch_factor"] == 1.0
+
+
 def test_compare_enumerates_cliques_once_per_graph():
     # Bron-Kerbosch is the expensive step in /api/compare; it used to run
     # twice per graph (once for the spanner at min_size=3, once for the

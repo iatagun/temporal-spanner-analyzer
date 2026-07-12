@@ -2,6 +2,7 @@
 
 import GraphViewer from './GraphViewer';
 import { MetricCard } from './MetricCards';
+import TruncatedWarning from './TruncatedWarning';
 import { formatTime, buildCliqueColorMap } from '../lib/utils';
 
 export default function CompareTimeRange({ timeRange, timeMin, timeMax, timeMin2, timeMax2, onMinChange, onMaxChange, onMin2Change, onMax2Change, loading, currentGraph, compareGraph, fullGraph, onCompare, onTrends }) {
@@ -76,6 +77,7 @@ export function CompareResult({ data }) {
 
   return (
     <div className="animate-in">
+      {c.truncated && <TruncatedWarning />}
       <div className="border border-gray-200 dark:border-gray-800 rounded-lg bg-gray-50 dark:bg-gray-900 p-4 mb-5 text-sm text-gray-700 dark:text-gray-300">
         İki dönem: kelimelerin <strong>%{c.vertex_overlap_pct}&apos;i</strong> ortak,
         bağlantıların <strong>%{c.edge_overlap_pct}&apos;si</strong> ortak.

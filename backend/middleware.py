@@ -19,28 +19,55 @@ RATE_LIMIT_EXEMPT_PATHS = {"/api/health"}
 _MAX_TRACKED_IPS = 10_000
 
 
+def _too_large_response() -> JSONResponse:
+    return JSONResponse(
+        {"detail": f"Request body exceeds the {MAX_BODY_BYTES // (1024 * 1024)}MB limit"},
+        status_code=413,
+    )
+
+
 class MaxBodySizeMiddleware(BaseHTTPMiddleware):
-    """Rejects any request whose declared Content-Length exceeds
-    MAX_BODY_BYTES, before the body is ever read into a Pydantic model.
-    /api/upload has its own streaming size check for the multipart path;
-    this covers the JSON-body endpoints (/api/spanner, /api/compare,
-    /api/trends, ...), which previously had no size guard at all.
+    """Rejects any request body exceeding MAX_BODY_BYTES before it's read
+    into a Pydantic model. /api/upload has its own streaming size check for
+    the multipart path; this covers the JSON-body endpoints (/api/spanner,
+    /api/compare, /api/trends, ...), which previously had no size guard at
+    all.
+
+    A declared Content-Length is checked first (cheap, no body read). But a
+    client can omit Content-Length entirely (e.g. chunked
+    Transfer-Encoding), which used to skip the check completely -- so when
+    it's absent, the body is streamed and counted directly, then cached
+    onto the request so the downstream handler still sees it (see the
+    `_body` comment in dispatch()).
     """
 
     async def dispatch(self, request: Request, call_next):
         content_length = request.headers.get("content-length")
         if content_length is not None:
             try:
-                too_large = int(content_length) > MAX_BODY_BYTES
+                if int(content_length) > MAX_BODY_BYTES:
+                    return _too_large_response()
             except ValueError:
-                too_large = False
-            if too_large:
-                return JSONResponse(
-                    {
-                        "detail": f"Request body exceeds the {MAX_BODY_BYTES // (1024 * 1024)}MB limit"
-                    },
-                    status_code=413,
-                )
+                pass
+            return await call_next(request)
+
+        # No Content-Length (e.g. chunked Transfer-Encoding) -- stream and
+        # count so these clients can't bypass the limit. Starlette's
+        # BaseHTTPMiddleware wraps `request` in a _CachedRequest whose
+        # wrapped_receive() replays `request._body` to the downstream
+        # handler *only* if it was populated via body()/this same
+        # attribute -- calling request.stream() and then call_next()
+        # without this would leave the downstream handler seeing an empty
+        # body, since _CachedRequest deliberately doesn't re-stream what
+        # was already consumed by a call to .stream().
+        chunks: list[bytes] = []
+        total = 0
+        async for chunk in request.stream():
+            total += len(chunk)
+            if total > MAX_BODY_BYTES:
+                return _too_large_response()
+            chunks.append(chunk)
+        request._body = b"".join(chunks)
         return await call_next(request)
 
 
@@ -74,5 +101,14 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
         hits.append(now)
         if len(self._hits) > _MAX_TRACKED_IPS:
-            self._hits = defaultdict(deque, {ip: h for ip, h in self._hits.items() if h})
+            # `if h` alone only drops IPs that some *other* request already
+            # emptied via the sliding-window pop above -- a one-shot IP
+            # that never comes back keeps a non-empty (but fully expired)
+            # deque forever, since nothing ever revisits it to prune it.
+            # Evict by each IP's own most recent hit (h[-1]) against the
+            # window instead, so idle IPs actually get reclaimed.
+            self._hits = defaultdict(deque, {
+                ip: h for ip, h in self._hits.items()
+                if h and now - h[-1] <= RATE_LIMIT_WINDOW_SECONDS
+            })
         return await call_next(request)

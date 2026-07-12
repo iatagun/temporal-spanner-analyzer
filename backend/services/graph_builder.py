@@ -300,12 +300,20 @@ def parse_json(
 
     for doc in docs:
         if isinstance(doc, dict):
-            date_val = (
-                doc.get("date")
-                or doc.get("tarih")
-                or doc.get("timestamp")
-                or doc.get("zaman", 0)
-            )
+            # `or`-chaining here would treat an explicit falsy date (0, the
+            # epoch) as "missing" and fall through to another field. Check
+            # key presence instead so a real 0 survives, and so a document
+            # with no date field at all stays None (not a fabricated 0)
+            # -- None is what _validate_date_coverage checks for below,
+            # matching parse_csv's stricter "no date info" handling instead
+            # of silently accepting a corpus with zero real date data.
+            date_val = doc.get("date")
+            if date_val is None:
+                date_val = doc.get("tarih")
+            if date_val is None:
+                date_val = doc.get("timestamp")
+            if date_val is None:
+                date_val = doc.get("zaman")
             raw_words = (
                 doc.get("words")
                 or doc.get("kelimeler")
@@ -317,7 +325,7 @@ def parse_json(
         else:
             continue
 
-        label_val = parse_label(date_val)
+        label_val = parse_label(date_val) if date_val is not None else None
         if isinstance(raw_words, str):
             raw_words = re.split(r"[,\s]+", raw_words)
         if not isinstance(raw_words, list) or len(raw_words) < 1:

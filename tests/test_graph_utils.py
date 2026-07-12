@@ -28,11 +28,15 @@ def test_maximal_cliques_finds_all_on_small_graph():
     assert all(len(c) == 3 for c in cliques)
 
 
-def test_maximal_cliques_respects_max_cliques_cap():
+def test_maximal_cliques_has_no_count_based_early_stop():
+    # maximal_cliques has no max_cliques param -- an early count-based stop
+    # would return arbitrary DFS-order cliques, not the largest ones (see
+    # spanner_service.enumerate_cliques for where "top N by size" actually
+    # gets applied, over the full enumeration).
     adj = _complete_multipartite(group_count=4, group_size=3)
-    cliques, truncated = maximal_cliques(adj, min_size=3, max_cliques=5)
-    assert truncated
-    assert len(cliques) >= 5
+    cliques, truncated = maximal_cliques(adj, min_size=3)
+    assert not truncated
+    assert len(cliques) == 3 ** 4
 
 
 def test_maximal_cliques_budget_bounds_adversarial_search():

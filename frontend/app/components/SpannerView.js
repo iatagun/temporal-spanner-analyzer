@@ -2,6 +2,7 @@
 
 import GraphViewer from './GraphViewer';
 import MetricCards from './MetricCards';
+import TruncatedWarning from './TruncatedWarning';
 import { buildCliqueColorMap, getSavingsDescription } from '../lib/utils';
 
 export default function SpannerView({ result }) {
@@ -15,6 +16,7 @@ export default function SpannerView({ result }) {
 
   return (
     <div className="animate-in">
+      {m.truncated && <TruncatedWarning />}
       <div className="border border-gray-200 dark:border-gray-800 rounded-lg bg-gray-50 dark:bg-gray-900 p-4 mb-5 text-sm text-gray-700 dark:text-gray-300">
         <strong>{m.uploaded_edges} bağlantıdan {m.spanner_edges}&apos;ine indirildi</strong>
         {' '}&mdash; %{m.savings_pct} tasarruf ({getSavingsDescription(m.savings_pct)}).

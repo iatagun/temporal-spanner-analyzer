@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import os
+from collections import deque
 from spanner.types import TemporalGraph, VertexID
 from spanner.core import spanner_for_clique
 from spanner.verify import verify_spanner, VerificationError
 
-from backend.models import GraphSchema, CliqueQualitySchema
+from backend.models import EdgeSchema, GraphSchema, CliqueQualitySchema, MetricSchema, SpannerResponse
 from backend.services.graph_utils import build_static_adj, maximal_cliques
 
 _VERIFY = os.getenv("SPANNER_VERIFY", "").lower() in ("1", "true", "yes")
@@ -77,14 +78,19 @@ def enumerate_cliques(
     this exponential-cost step once and filter, instead of re-enumerating.
     """
     adj = build_static_adj(graph)
-    # max_cliques bounds the Bron-Kerbosch search itself (not just a
-    # post-hoc slice), so a dense upload can't force unbounded enumeration
-    # before we ever get to trim the result.
-    cliques, truncated = maximal_cliques(
-        adj, min_size=min_clique_size, max_cliques=max_cliques
-    )
+    # max_cliques is deliberately NOT passed into maximal_cliques' search --
+    # doing so used to stop Bron-Kerbosch as soon as it had found
+    # max_cliques cliques in DFS order, which are not the largest ones, just
+    # the first ones the traversal happened to reach. Sorting+slicing that
+    # already-truncated set afterward gave the illusion of "top N" while
+    # actually returning "first N found, ranked amongst themselves". The
+    # search below is bounded only by the recursion budget (still caps
+    # runtime on adversarial graphs); max_cliques is applied as a real
+    # top-N-by-size selection over that full (budget-bounded) result.
+    cliques, truncated = maximal_cliques(adj, min_size=min_clique_size)
     cliques = sorted(cliques, key=len, reverse=True)
     if max_cliques > 0:
+        truncated = truncated or len(cliques) > max_cliques
         cliques = cliques[:max_cliques]
     return cliques, truncated
 
@@ -131,7 +137,6 @@ def compute_spanner_pipeline(
     set[tuple[str, str]],
     list[CliqueQualitySchema],
     set[tuple[str, str]],
-    set[tuple[str, str]],
     bool,
 ]:
     cliques, truncated = enumerate_cliques(graph, min_clique_size, max_cliques)
@@ -139,3 +144,149 @@ def compute_spanner_pipeline(
         build_spanner_from_cliques(graph, cliques)
     )
     return lbl, max_label, cliques, all_spanner_edges, clique_qualities, clique_pairs, truncated
+
+
+def _shortest_temporal_path_len(
+    start: str, end: str, edges: list[tuple[str, str, float]]
+) -> int | None:
+    adj: dict[str, list[tuple[str, float]]] = {}
+    for u, v, l in edges:
+        if u == v:
+            continue
+        adj.setdefault(u, []).append((v, l))
+        adj.setdefault(v, []).append((u, l))
+    q: deque[tuple[str, float, int]] = deque()
+    q.append((start, -float("inf"), 0))
+    visited: set[tuple[str, float]] = {(start, -float("inf"))}
+    while q:
+        v, last_lbl, dist = q.popleft()
+        if v == end:
+            return dist
+        for w, l in adj.get(v, []):
+            if l >= last_lbl and (w, l) not in visited:
+                visited.add((w, l))
+                q.append((w, l, dist + 1))
+    return None
+
+
+def _compute_stretch_factor(
+    lbl: dict,
+    E_spanner: set[tuple[str, str]],
+    clique_pairs: set[tuple[str, str]],
+) -> float:
+    all_edges = [
+        (a, b, lbl.get((a, b) if a <= b else (b, a), 0.0))
+        for a, b in E_spanner
+    ]
+    orig_edges = [
+        (u, v, lbl[(u, v) if u <= v else (v, u)])
+        for u, v in lbl
+    ]
+
+    pairs = sorted(clique_pairs)
+    if len(pairs) > 50:
+        pairs = pairs[:50]
+
+    total_ratio = 0.0
+    pairs_checked = 0
+
+    for u, v in pairs:
+        d_orig = _shortest_temporal_path_len(u, v, orig_edges)
+        d_spanner = _shortest_temporal_path_len(u, v, all_edges)
+        if d_orig and d_orig > 0:
+            if d_spanner is None:
+                continue
+            total_ratio += d_spanner / d_orig
+            pairs_checked += 1
+
+    return round(total_ratio / max(pairs_checked, 1), 2)
+
+
+def build_spanner_response(
+    req_graph: GraphSchema,
+    cliques: list[set[str]],
+    truncated: bool,
+) -> SpannerResponse:
+    """Shared SpannerResponse assembly used by both /api/spanner and
+    /api/compare -- previously each router hand-built this (the n<2
+    short-circuit, the bound_7n coverage loop, the verified tri-state
+    reduction, the spanner_edges_out comprehension, the savings/stretch
+    formulas) and the two copies had already drifted (compare.py's n<2
+    branch silently omitted stretch_factor).
+    """
+    V = set(req_graph.vertices)
+    n = len(V)
+
+    if n < 2:
+        return SpannerResponse(
+            original=req_graph,
+            spanner=GraphSchema(vertices=sorted(V, key=str), edges=[]),
+            cliques=[],
+            metrics=MetricSchema(
+                uploaded_edges=len(req_graph.edges),
+                full_clique_edges=0,
+                spanner_edges=0,
+                bound_7n=0,
+                ratio_per_n=0.0,
+                savings_pct=0.0,
+                verified=True,
+                stretch_factor=1.0,
+            ),
+        )
+
+    lbl, max_label, all_spanner_edges, clique_qualities, clique_pairs = (
+        build_spanner_from_cliques(req_graph, cliques)
+    )
+
+    uploaded_count = len(req_graph.edges)
+    spanner_count = len(all_spanner_edges)
+
+    vertices_in_cliques: set[str] = set()
+    for c in cliques:
+        vertices_in_cliques.update(c)
+    n_covered = len(vertices_in_cliques)
+    bound = 7 * max(n_covered, 1)
+    for v in V:
+        if v not in vertices_in_cliques:
+            bound += 1
+
+    verified_results = [cq.verified for cq in clique_qualities] if clique_qualities else []
+    if not verified_results:
+        all_verified = None
+    elif all(v is None for v in verified_results):
+        all_verified = None
+    else:
+        all_verified = all(v for v in verified_results if v is not None)
+
+    spanner_edges_out = [
+        EdgeSchema(u=a, v=b, label=lbl.get((a, b) if a <= b else (b, a), 0.0))
+        for a, b in all_spanner_edges
+    ]
+
+    savings_base = max(uploaded_count, 1)
+    savings = round((1 - spanner_count / savings_base) * 100, 1)
+
+    stretch = (
+        _compute_stretch_factor(lbl, all_spanner_edges, clique_pairs)
+        if spanner_count > 0 and clique_pairs
+        else 1.0
+    )
+
+    return SpannerResponse(
+        original=req_graph,
+        spanner=GraphSchema(vertices=sorted(V, key=str), edges=spanner_edges_out),
+        cliques=[sorted(c) for c in cliques],
+        metrics=MetricSchema(
+            uploaded_edges=uploaded_count,
+            full_clique_edges=len(lbl),
+            spanner_edges=spanner_count,
+            bound_7n=bound,
+            ratio_per_n=round(spanner_count / max(n, 1), 2),
+            savings_pct=savings,
+            verified=all_verified,
+            stretch_factor=stretch,
+            cliques_processed=len(cliques),
+            clique_qualities=clique_qualities,
+            truncated=truncated,
+        ),
+    )

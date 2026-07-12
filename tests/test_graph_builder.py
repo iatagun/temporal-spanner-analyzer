@@ -1,6 +1,7 @@
 from backend.services.graph_builder import (
     parse_label,
     parse_corpus_rows,
+    parse_json,
     _compute_pmi,
     _is_content_word,
 )
@@ -77,6 +78,38 @@ def test_is_content_word_pos_vs_fallback():
     assert _is_content_word("ve", "CCONJ") is False
     assert _is_content_word("ve", "") is False  # falls back to stopword list
     assert _is_content_word("armut", "") is True
+
+
+def test_parse_json_preserves_explicit_zero_date():
+    # Regression test: `doc.get("date") or doc.get("tarih") or ...` treated
+    # an explicit date=0 (epoch) as falsy and silently substituted a
+    # different field's value instead.
+    import json as json_mod
+    content = json_mod.dumps([
+        {"date": 0, "tarih": "2022-06-01", "words": ["elma", "armut"]},
+        {"date": 0, "tarih": "2022-06-01", "words": ["elma", "armut"]},
+    ]).encode()
+    graph, dates, rows_parsed, _ = parse_json(content)
+    assert rows_parsed == 2
+    assert dates == ["0.0", "0.0"]
+
+
+def test_parse_json_flags_corpus_with_no_date_fields_at_all():
+    # Regression test: a JSON corpus where every document has no date/
+    # tarih/timestamp/zaman field used to silently default to epoch (via
+    # doc.get("zaman", 0) -> parse_label(0) -> 0.0, which is not None) and
+    # never trip the same >50%-unparsed validation CSV enforces for the
+    # equivalent "no real date info" case.
+    import json as json_mod
+    content = json_mod.dumps([
+        {"words": ["elma", "armut"]},
+        {"words": ["elma", "armut"]},
+    ]).encode()
+    try:
+        parse_json(content)
+        assert False, "expected ValueError for a corpus with no date info at all"
+    except ValueError:
+        pass
 
 
 def test_compute_pmi_is_normalized_and_penalizes_hapax():

@@ -31,6 +31,7 @@ class WordCliqueResponse(BaseModel):
     word: str
     cliques: List[WordCliqueItemResponse]
     total_snapshots: int
+    truncated: bool = False
 
 
 class CheckCliqueRequest(BaseModel):
@@ -82,6 +83,7 @@ def word_cliques(req: WordCliqueRequest):
         word=req.word,
         cliques=list(cliques_map.values()),
         total_snapshots=total_snapshots,
+        truncated=trend.truncated,
     )
 
 

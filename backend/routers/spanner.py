@@ -1,23 +1,15 @@
 import csv
 import io
 import os
-from collections import deque
 from xml.sax.saxutils import escape as xml_escape
 
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 from fastapi.responses import Response
 
-from backend.models import (
-    SpannerRequest,
-    SpannerResponse,
-    GraphSchema,
-    EdgeSchema,
-    MetricSchema,
-    UploadResponse,
-)
+from backend.models import SpannerRequest, SpannerResponse, UploadResponse
 from backend.services.graph_builder import parse_csv, parse_json, parse_corpus_rows
 from backend.services.corpus_parser import detect_and_parse
-from backend.services.spanner_service import compute_spanner_pipeline
+from backend.services.spanner_service import build_spanner_response, enumerate_cliques
 
 router = APIRouter()
 
@@ -30,143 +22,12 @@ PMI_THRESHOLD_DEFAULT = 0.15
 MAX_UPLOAD_BYTES = int(os.getenv("MAX_UPLOAD_BYTES", str(5 * 1024 * 1024)))
 
 
-def _shortest_temporal_path_len(
-    start: str, end: str, edges: list[tuple[str, str, float]]
-) -> int | None:
-    adj: dict[str, list[tuple[str, float]]] = {}
-    for u, v, l in edges:
-        if u == v:
-            continue
-        adj.setdefault(u, []).append((v, l))
-        adj.setdefault(v, []).append((u, l))
-    q: deque[tuple[str, float, int]] = deque()
-    q.append((start, -float("inf"), 0))
-    visited: set[tuple[str, float]] = {(start, -float("inf"))}
-    while q:
-        v, last_lbl, dist = q.popleft()
-        if v == end:
-            return dist
-        for w, l in adj.get(v, []):
-            if l >= last_lbl and (w, l) not in visited:
-                visited.add((w, l))
-                q.append((w, l, dist + 1))
-    return None
-
-
-def _compute_stretch_factor(
-    lbl: dict,
-    E_spanner: set[tuple[str, str]],
-    clique_pairs: set[tuple[str, str]],
-) -> float:
-    all_edges = [
-        (a, b, lbl.get((a, b) if a <= b else (b, a), 0.0))
-        for a, b in E_spanner
-    ]
-    orig_edges = [
-        (u, v, lbl[(u, v) if u <= v else (v, u)])
-        for u, v in lbl
-    ]
-
-    pairs = sorted(clique_pairs)
-    if len(pairs) > 50:
-        pairs = pairs[:50]
-
-    total_ratio = 0.0
-    pairs_checked = 0
-
-    for u, v in pairs:
-        d_orig = _shortest_temporal_path_len(u, v, orig_edges)
-        d_spanner = _shortest_temporal_path_len(u, v, all_edges)
-        if d_orig and d_orig > 0:
-            if d_spanner is None:
-                continue
-            total_ratio += d_spanner / d_orig
-            pairs_checked += 1
-
-    return round(total_ratio / max(pairs_checked, 1), 2)
-
-
 @router.post("/spanner")
 def compute_spanner(req: SpannerRequest) -> SpannerResponse:
-    V = set(req.graph.vertices)
-    n = len(V)
-
-    if n < 2:
-        return SpannerResponse(
-            original=req.graph,
-            spanner=GraphSchema(vertices=sorted(V, key=str), edges=[]),
-            cliques=[],
-            metrics=MetricSchema(
-                uploaded_edges=len(req.graph.edges),
-                full_clique_edges=0,
-                spanner_edges=0,
-                bound_7n=0,
-                ratio_per_n=0.0,
-                savings_pct=0.0,
-                verified=True,
-                stretch_factor=1.0,
-            ),
-        )
-
-    lbl, max_label, cliques, all_spanner_edges, clique_qualities, clique_pairs, truncated = (
-        compute_spanner_pipeline(req.graph, min_clique_size=req.min_clique_size, max_cliques=req.max_cliques)
+    cliques, truncated = enumerate_cliques(
+        req.graph, min_clique_size=req.min_clique_size, max_cliques=req.max_cliques
     )
-
-    uploaded_count = len(req.graph.edges)
-    spanner_count = len(all_spanner_edges)
-
-    vertices_in_cliques: set[str] = set()
-    for c in cliques:
-        vertices_in_cliques.update(c)
-    n_covered = len(vertices_in_cliques)
-    bound = 7 * max(n_covered, 1)
-    for v in V:
-        if v not in vertices_in_cliques:
-            bound += 1
-
-    verified_results = [cq.verified for cq in clique_qualities] if clique_qualities else []
-    if not verified_results:
-        all_verified = None
-    elif all(v is None for v in verified_results):
-        all_verified = None
-    else:
-        all_verified = all(v for v in verified_results if v is not None)
-
-    spanner_edges_out = [
-        EdgeSchema(u=a, v=b, label=lbl.get((a, b) if a <= b else (b, a), 0.0))
-        for a, b in all_spanner_edges
-    ]
-
-    savings_base = max(uploaded_count, 1)
-    savings = round((1 - spanner_count / savings_base) * 100, 1)
-
-    stretch = (
-        _compute_stretch_factor(lbl, all_spanner_edges, clique_pairs)
-        if spanner_count > 0 and clique_pairs
-        else 1.0
-    )
-
-    return SpannerResponse(
-        original=req.graph,
-        spanner=GraphSchema(
-            vertices=sorted(V, key=str),
-            edges=spanner_edges_out,
-        ),
-        cliques=[sorted(c) for c in cliques],
-        metrics=MetricSchema(
-            uploaded_edges=uploaded_count,
-            full_clique_edges=len(lbl),
-            spanner_edges=spanner_count,
-            bound_7n=bound,
-            ratio_per_n=round(spanner_count / max(n, 1), 2),
-            savings_pct=savings,
-            verified=all_verified,
-            stretch_factor=stretch,
-            cliques_processed=len(cliques),
-            clique_qualities=clique_qualities,
-            truncated=truncated,
-        ),
-    )
+    return build_spanner_response(req.graph, cliques, truncated)
 
 
 def _read_upload_bounded(file: UploadFile, max_bytes: int) -> bytes:
@@ -190,7 +51,7 @@ def _read_upload_bounded(file: UploadFile, max_bytes: int) -> bytes:
 @router.post("/upload", response_model=UploadResponse)
 def upload_csv(
     file: UploadFile = File(...),
-    pmi_threshold: float = Form(PMI_THRESHOLD_DEFAULT),
+    pmi_threshold: float = Form(PMI_THRESHOLD_DEFAULT, ge=-1.0, le=1.0),
 ):
     if not file.filename:
         raise HTTPException(400, "File is required")

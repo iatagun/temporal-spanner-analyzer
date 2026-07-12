@@ -74,7 +74,7 @@ export default function GraphViewer({ graph, label, height = 400, colorMap }) {
     if (!graph || !graph.vertices || !graph.edges) return [];
     const nodes = graph.vertices.map(v => ({ data: { id: v } }));
     const edges = graph.edges.map((e, i) => ({
-      data: { id: `e${i}`, source: e.u, target: e.v, label: e.label ? e.label.toFixed(2) : '' }
+      data: { id: `e${i}`, source: e.u, target: e.v, label: e.label != null ? e.label.toFixed(2) : '' }
     }));
     return [...nodes, ...edges];
   }, [graph]);
