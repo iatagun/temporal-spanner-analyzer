@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException
+from pydantic import Field
 from typing import List, Optional
 
 from backend.models import GraphSchema, BaseModel
@@ -8,7 +9,7 @@ from backend.services.trend_analyzer import compute_trends
 class WordCliqueRequest(BaseModel):
     graph: GraphSchema
     word: str
-    windows: int = 10
+    windows: int = Field(10, ge=1, le=200)
 
 
 class WordCliqueSnapshotResponse(BaseModel):

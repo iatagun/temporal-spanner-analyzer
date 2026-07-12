@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List, Optional
 
 
@@ -15,8 +15,8 @@ class GraphSchema(BaseModel):
 
 class SpannerRequest(BaseModel):
     graph: GraphSchema
-    min_clique_size: int = 3
-    max_cliques: int = 0
+    min_clique_size: int = Field(3, ge=2, le=50)
+    max_cliques: int = Field(0, ge=0, le=100_000)
 
 
 class CliqueQualitySchema(BaseModel):
@@ -36,7 +36,6 @@ class MetricSchema(BaseModel):
     verified: Optional[bool]
     stretch_factor: Optional[float] = None
     cliques_processed: int = 0
-    pmi_threshold: float = 0.0
     stopwords_filtered: int = 0
     clique_qualities: List[CliqueQualitySchema] = []
     truncated: bool = False
@@ -55,7 +54,6 @@ class CsvRow(BaseModel):
 
 
 class UploadResponse(BaseModel):
-    session_id: str
     graph: GraphSchema
     rows_parsed: int
     time_range: List[str]
@@ -82,7 +80,7 @@ class CliqueTimeline(BaseModel):
 
 class TrendRequest(BaseModel):
     graph: GraphSchema
-    windows: int = 10
+    windows: int = Field(10, ge=1, le=200)
 
 
 class TrendResponse(BaseModel):

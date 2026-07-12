@@ -102,12 +102,51 @@ def test_upload_oversized_csv_field_is_400_not_500():
     assert r.status_code == 400
 
 
+def test_trends_windows_zero_is_422_not_crash():
+    # Regression test: windows=0 used to reach compute_trends and raise an
+    # unhandled ZeroDivisionError (step = range / windows) -> bare 500.
+    g = {"vertices": ["a", "b"], "edges": [{"u": "a", "v": "b", "label": 1.0}]}
+    r = client.post("/api/trends", json={"graph": g, "windows": 0})
+    assert r.status_code == 422
+
+
+def test_trends_windows_out_of_bounds_is_422():
+    g = {"vertices": ["a", "b"], "edges": [{"u": "a", "v": "b", "label": 1.0}]}
+    r = client.post("/api/trends", json={"graph": g, "windows": 100_000})
+    assert r.status_code == 422
+
+
+def test_word_cliques_windows_zero_is_422():
+    g = {"vertices": ["a", "b"], "edges": [{"u": "a", "v": "b", "label": 1.0}]}
+    r = client.post("/api/word-cliques", json={"graph": g, "word": "a", "windows": 0})
+    assert r.status_code == 422
+
+
+def test_spanner_min_clique_size_out_of_bounds_is_422():
+    g = {"vertices": ["a", "b"], "edges": [{"u": "a", "v": "b", "label": 1.0}]}
+    r = client.post("/api/spanner", json={"graph": g, "min_clique_size": 1})
+    assert r.status_code == 422
+
+
+def test_spanner_max_cliques_out_of_bounds_is_422():
+    g = {"vertices": ["a", "b"], "edges": [{"u": "a", "v": "b", "label": 1.0}]}
+    r = client.post("/api/spanner", json={"graph": g, "max_cliques": -1})
+    assert r.status_code == 422
+
+
+def test_upload_response_has_no_dead_session_id_field():
+    csv_content = b"date,words\n2020-01-05,\"a,b\"\n2020-02-01,\"a,b\"\n"
+    r = client.post("/api/upload", files={"file": ("test.csv", csv_content, "text/csv")})
+    assert "session_id" not in r.json()
+
+
 def test_spanner_empty_graph():
     g = {"vertices": ["a"], "edges": []}
     r = client.post("/api/spanner", json={"graph": g})
     assert r.status_code == 200
     d = r.json()
     assert d["metrics"]["spanner_edges"] == 0
+    assert "pmi_threshold" not in d["metrics"]
 
 
 def test_export_json():

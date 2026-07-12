@@ -1,7 +1,6 @@
 import csv
 import io
 import os
-import uuid
 from collections import deque
 from xml.sax.saxutils import escape as xml_escape
 
@@ -164,7 +163,6 @@ def compute_spanner(req: SpannerRequest) -> SpannerResponse:
             verified=all_verified,
             stretch_factor=stretch,
             cliques_processed=len(cliques),
-            pmi_threshold=PMI_THRESHOLD_DEFAULT,
             clique_qualities=clique_qualities,
             truncated=truncated,
         ),
@@ -234,10 +232,7 @@ def upload_csv(
     except ValueError as e:
         raise HTTPException(400, str(e))
 
-    session_id = str(uuid.uuid4())[:8]
-
     return UploadResponse(
-        session_id=session_id,
         graph=graph,
         rows_parsed=rows_parsed,
         time_range=[min(dates), max(dates)] if dates else ["", ""],

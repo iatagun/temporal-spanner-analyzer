@@ -2,13 +2,28 @@
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
 
+async function errorMessageFrom(res) {
+  const raw = await res.text();
+  try {
+    const parsed = JSON.parse(raw);
+    if (typeof parsed.detail === 'string') return parsed.detail;
+    if (Array.isArray(parsed.detail)) {
+      // FastAPI/Pydantic validation errors: [{loc, msg, ...}, ...]
+      return parsed.detail.map(d => d.msg || JSON.stringify(d)).join('; ');
+    }
+  } catch {
+    // not JSON, fall through to raw text
+  }
+  return raw || `${res.status} ${res.statusText}`;
+}
+
 async function post(path, body) {
   const res = await fetch(`${API}${path}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
-  if (!res.ok) throw new Error(await res.text());
+  if (!res.ok) throw new Error(await errorMessageFrom(res));
   return res.json();
 }
 
@@ -17,7 +32,7 @@ async function upload(path, formData) {
     method: 'POST',
     body: formData,
   });
-  if (!res.ok) throw new Error(await res.text());
+  if (!res.ok) throw new Error(await errorMessageFrom(res));
   return res.json();
 }
 
