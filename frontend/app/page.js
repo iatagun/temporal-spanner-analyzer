@@ -23,6 +23,7 @@ export default function Home() {
   const [trendData, setTrendData] = useState(null);
   const [uploadInfo, setUploadInfo] = useState(null);
   const [fullGraph, setFullGraph] = useState(null);
+  const [rawDocuments, setRawDocuments] = useState([]);
   const [timeRange, setTimeRange] = useState(null);
   const [timeMin, setTimeMin] = useState(0);
   const [timeMax, setTimeMax] = useState(1);
@@ -69,13 +70,13 @@ export default function Home() {
     if (!graph || graph.edges.length === 0) { setTrendData(null); return; }
     setLoading(true); setError(null);
     try {
-      setTrendData(await computeTrends(graph));
+      setTrendData(await computeTrends(graph, 10, { rawDocuments, pmiThreshold }));
     } catch (e) {
       setError(e.message);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [rawDocuments, pmiThreshold]);
 
   const doCompare = useCallback(async (graphA, graphB) => {
     if (!graphA || !graphB || graphA.vertices.length < 2 || graphB.vertices.length < 2) {
@@ -97,6 +98,7 @@ export default function Home() {
     try {
       const data = await uploadCSV(file, pmiThreshold);
       setFullGraph(data.graph);
+      setRawDocuments(data.raw_documents || []);
       const tr = data.time_range.filter(t => t !== '').map(Number);
       // The initial spanner computation must match the same 40%-window
       // default that currentGraph settles on and that the UI already
@@ -280,7 +282,12 @@ export default function Home() {
 
           {view === 'explore' && (
             <div className="mb-8 animate-in">
-              <ExploreView fullGraph={uploadInfo?.graph || currentGraph} onSample={handleSample} />
+              <ExploreView
+                fullGraph={uploadInfo?.graph || currentGraph}
+                onSample={handleSample}
+                rawDocuments={rawDocuments}
+                pmiThreshold={pmiThreshold}
+              />
             </div>
           )}
 

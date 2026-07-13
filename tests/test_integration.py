@@ -6,7 +6,7 @@ client = TestClient(app)
 
 
 def test_upload_csv_success():
-    # NPMI + min_codf=2 (see graph_builder._compute_pmi) means a pair needs
+    # NPMI + min_codf=2 (see graph_builder.compute_npmi) means a pair needs
     # to co-occur more than once, and not in literally every row, to score
     # as an edge -- "kedi,kopek" is included as a second, unrelated pair so
     # "yapay" isn't in 100% of rows (which would make it uninformative and
@@ -138,6 +138,38 @@ def test_upload_response_has_no_dead_session_id_field():
     csv_content = b"date,words\n2020-01-05,\"a,b\"\n2020-02-01,\"a,b\"\n"
     r = client.post("/api/upload", files={"file": ("test.csv", csv_content, "text/csv")})
     assert "session_id" not in r.json()
+
+
+def test_upload_returns_raw_documents_for_windowed_trends():
+    # /api/trends recomputes NPMI per time window from these raw
+    # (label, words) rows instead of only slicing the corpus-global edge
+    # set -- see trend_analyzer.compute_trends. The backend stays
+    # stateless: the client re-sends what upload returned here, there is
+    # no server-side session (see test_upload_response_has_no_dead_session_id_field).
+    # A triangle (3 mutually co-occurring words) so it survives the
+    # single-snapshot noise filter (see trend_analyzer.compute_trends)
+    # even though both rows land in the same (windows=1) window.
+    csv_content = (
+        b"date,words\n"
+        b"2020-01-05,\"kedi,kopek,kus\"\n"
+        b"2020-02-01,\"kedi,kopek,kus\"\n"
+    )
+    r = client.post("/api/upload", files={"file": ("test.csv", csv_content, "text/csv")})
+    assert r.status_code == 200
+    d = r.json()
+    assert len(d["raw_documents"]) == 2
+    assert {tuple(sorted(doc["words"])) for doc in d["raw_documents"]} == {("kedi", "kopek", "kus")}
+
+    r2 = client.post("/api/trends", json={
+        "graph": d["graph"],
+        "windows": 1,
+        "raw_documents": d["raw_documents"],
+        "pmi_threshold": d["pmi_threshold"],
+    })
+    assert r2.status_code == 200
+    tr = r2.json()
+    member_sets = {tuple(sorted(m for s in tl["snapshots"] for m in s["members"])) for tl in tr["timelines"]}
+    assert ("kedi", "kopek", "kus") in member_sets
 
 
 def test_spanner_empty_graph():

@@ -2,7 +2,7 @@ from backend.services.graph_builder import (
     parse_label,
     parse_corpus_rows,
     parse_json,
-    _compute_pmi,
+    compute_npmi,
     _is_content_word,
 )
 
@@ -40,7 +40,7 @@ def test_corpus_rows_without_date_metadata_does_not_crash():
         ("", [("armut", ""), ("muz", "")]),
         ("", [("elma", ""), ("muz", "")]),
     ]
-    graph, dates, rows_parsed, _ = parse_corpus_rows(rows)
+    graph, dates, rows_parsed, _, _ = parse_corpus_rows(rows)
     assert rows_parsed == 3
     assert set(graph.vertices) == {"elma", "armut", "muz"}
 
@@ -66,7 +66,7 @@ def test_corpus_rows_pos_filter_drops_function_words():
         ("2020-01-01", [("elma", "NOUN"), ("ve", "CCONJ"), ("armut", "NOUN")]),
         ("2020-02-01", [("elma", "NOUN"), ("ve", "CCONJ"), ("armut", "NOUN")]),
     ]
-    graph, _, rows_parsed, stopword_count = parse_corpus_rows(rows)
+    graph, _, rows_parsed, stopword_count, _ = parse_corpus_rows(rows)
     assert rows_parsed == 2
     assert "ve" not in graph.vertices
     assert set(graph.vertices) == {"elma", "armut"}
@@ -89,7 +89,7 @@ def test_parse_json_preserves_explicit_zero_date():
         {"date": 0, "tarih": "2022-06-01", "words": ["elma", "armut"]},
         {"date": 0, "tarih": "2022-06-01", "words": ["elma", "armut"]},
     ]).encode()
-    graph, dates, rows_parsed, _ = parse_json(content)
+    graph, dates, rows_parsed, _, _ = parse_json(content)
     assert rows_parsed == 2
     assert dates == ["0.0", "0.0"]
 
@@ -120,7 +120,7 @@ def test_compute_pmi_is_normalized_and_penalizes_hapax():
         ["a", "b"], ["a", "b"], ["c", "d"], ["c", "d"],
         ["a", "b"], ["c", "d"], ["e", "f"],
     ]
-    pmi = _compute_pmi(rows)
+    pmi = compute_npmi(rows)
     assert ("e", "f") not in pmi  # codf=1 < default min_codf=2
     for score in pmi.values():
         assert -1.0 <= score <= 1.0

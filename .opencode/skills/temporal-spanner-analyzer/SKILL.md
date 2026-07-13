@@ -84,7 +84,7 @@ CSV/JSON → parse_csv/parse_json → PMI computation → GraphSchema
 - **Files**: `snake_case.py`
 - **Classes**: `PascalCase` (e.g., `TemporalGraph`, `CliqueQualitySchema`)
 - **Functions/Methods**: `snake_case` (e.g., `compute_spanner_pipeline`, `_edge_key`)
-- **Private helpers**: `_leading_underscore` (e.g., `_compute_pmi`, `_process_clique`)
+- **Private helpers**: `_leading_underscore` (e.g., `_build_graph`, `_process_clique`)
 - **Constants**: `UPPER_SNAKE_CASE` (e.g., `PMI_THRESHOLD_DEFAULT`, `TURKISH_STOPWORDS`)
 - **Type hints**: Required on ALL function signatures (params + return)
 - **Imports order**: stdlib → third-party → local (absolute paths from project root, e.g. `from backend.models import GraphSchema`)

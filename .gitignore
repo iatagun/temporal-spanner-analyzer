@@ -11,6 +11,11 @@ venv/
 node_modules/
 .next/
 
+# Playwright
+frontend/test-results/
+frontend/playwright-report/
+frontend/blob-report/
+
 # IDE
 .vscode/
 .idea/

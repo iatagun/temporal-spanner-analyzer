@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import Field
 from typing import List, Optional
 
-from backend.models import GraphSchema, BaseModel
+from backend.models import GraphSchema, BaseModel, RawDocumentSchema
 from backend.services.trend_analyzer import compute_trends
 
 
@@ -10,6 +10,8 @@ class WordCliqueRequest(BaseModel):
     graph: GraphSchema
     word: str
     windows: int = Field(10, ge=1, le=200)
+    raw_documents: List[RawDocumentSchema] = []
+    pmi_threshold: float = Field(0.15, ge=-1.0, le=1.0)
 
 
 class WordCliqueSnapshotResponse(BaseModel):
@@ -54,7 +56,13 @@ router = APIRouter()
 def word_cliques(req: WordCliqueRequest):
     if not req.word:
         raise HTTPException(400, "word is required")
-    trend = compute_trends(req.graph, windows=req.windows)
+    raw_documents = [(d.label, d.words) for d in req.raw_documents] if req.raw_documents else None
+    trend = compute_trends(
+        req.graph,
+        windows=req.windows,
+        raw_documents=raw_documents,
+        pmi_threshold=req.pmi_threshold,
+    )
 
     cliques_map: dict[str, dict] = {}
     total_snapshots = 0

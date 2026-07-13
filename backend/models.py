@@ -53,12 +53,21 @@ class CsvRow(BaseModel):
     words: List[str]
 
 
+class RawDocumentSchema(BaseModel):
+    """One corpus row/sentence as (resolved date label, content words) --
+    preserved past upload so /api/trends can recompute NPMI per time
+    window instead of only slicing the corpus-global edge set."""
+    label: float
+    words: List[str]
+
+
 class UploadResponse(BaseModel):
     graph: GraphSchema
     rows_parsed: int
     time_range: List[str]
     stopwords_filtered: int = 0
     pmi_threshold: float = 0.0
+    raw_documents: List[RawDocumentSchema] = []
 
 
 class CliqueSnapshot(BaseModel):
@@ -81,6 +90,13 @@ class CliqueTimeline(BaseModel):
 class TrendRequest(BaseModel):
     graph: GraphSchema
     windows: int = Field(10, ge=1, le=200)
+    # When present, trend computation recomputes NPMI independently within
+    # each time window instead of slicing the single corpus-global edge set
+    # -- see trend_analyzer.compute_trends. pmi_threshold must match the
+    # value the corpus was uploaded with for "significant" to mean the same
+    # thing locally as it did globally.
+    raw_documents: List[RawDocumentSchema] = []
+    pmi_threshold: float = Field(0.15, ge=-1.0, le=1.0)
 
 
 class TrendResponse(BaseModel):

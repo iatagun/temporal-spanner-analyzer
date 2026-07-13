@@ -10,4 +10,10 @@ router = APIRouter()
 def get_trends(req: TrendRequest):
     if not req.graph or not req.graph.edges:
         raise HTTPException(400, "Graph must have at least one edge")
-    return compute_trends(req.graph, windows=req.windows)
+    raw_documents = [(d.label, d.words) for d in req.raw_documents] if req.raw_documents else None
+    return compute_trends(
+        req.graph,
+        windows=req.windows,
+        raw_documents=raw_documents,
+        pmi_threshold=req.pmi_threshold,
+    )

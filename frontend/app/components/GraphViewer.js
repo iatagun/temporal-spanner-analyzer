@@ -47,15 +47,31 @@ function buildCyStyles(isDark) {
 // cytoscape's 'cose' layout is a force-directed physics simulation --
 // benchmarked at ~200ms for 100 nodes, ~4s for 500, ~16s for 1000, and
 // ~62s for 2000 (roughly O(n^2)). A few-thousand-vertex corpus graph
-// would take minutes and hang the tab. 'grid' has no physics simulation
-// (~90ms even at 4000+ nodes) -- far less pretty, but the only option
-// that stays usable at that scale.
+// would take minutes and hang the tab.
 const COSE_NODE_LIMIT = 300;
+// A plain grid of everything above that limit is fast but visually
+// useless -- a wall of same-size dots with no way to tell what matters.
+// Showing only the most-connected TOP_N nodes with the real cose layout
+// instead stays fast (well under COSE_NODE_LIMIT) *and* is the part of a
+// large graph a linguist is most likely to care about.
+const TOP_N_FOR_LARGE_GRAPHS = 150;
 
-function layoutFor(nodeCount) {
-  return nodeCount > COSE_NODE_LIMIT
-    ? { name: 'grid', animate: false }
-    : { name: 'cose', animate: false, nodeRepulsion: 400000, idealEdgeLength: 100 };
+const COSE_LAYOUT = { name: 'cose', animate: false, nodeRepulsion: 400000, idealEdgeLength: 100 };
+
+function reduceToTopDegreeNodes(graph, topN) {
+  const degree = new Map();
+  graph.vertices.forEach(v => degree.set(v, 0));
+  graph.edges.forEach(e => {
+    degree.set(e.u, (degree.get(e.u) || 0) + 1);
+    degree.set(e.v, (degree.get(e.v) || 0) + 1);
+  });
+  const kept = new Set(
+    [...graph.vertices].sort((a, b) => (degree.get(b) || 0) - (degree.get(a) || 0)).slice(0, topN)
+  );
+  return {
+    vertices: graph.vertices.filter(v => kept.has(v)),
+    edges: graph.edges.filter(e => kept.has(e.u) && kept.has(e.v)),
+  };
 }
 
 export default function GraphViewer({ graph, label, height = 400, colorMap }) {
@@ -77,14 +93,22 @@ export default function GraphViewer({ graph, label, height = 400, colorMap }) {
     }
   }, [colorMap, borderColor]);
 
+  const isLarge = !!graph && graph.vertices && graph.vertices.length > COSE_NODE_LIMIT;
+
+  const displayGraph = useMemo(() => {
+    if (!graph || !graph.vertices) return graph;
+    if (!isLarge) return graph;
+    return reduceToTopDegreeNodes(graph, TOP_N_FOR_LARGE_GRAPHS);
+  }, [graph, isLarge]);
+
   const elements = useMemo(() => {
-    if (!graph || !graph.vertices || !graph.edges) return [];
-    const nodes = graph.vertices.map(v => ({ data: { id: v } }));
-    const edges = graph.edges.map((e, i) => ({
+    if (!displayGraph || !displayGraph.vertices || !displayGraph.edges) return [];
+    const nodes = displayGraph.vertices.map(v => ({ data: { id: v } }));
+    const edges = displayGraph.edges.map((e, i) => ({
       data: { id: `e${i}`, source: e.u, target: e.v, label: e.label != null ? e.label.toFixed(2) : '' }
     }));
     return [...nodes, ...edges];
-  }, [graph]);
+  }, [displayGraph]);
 
   if (!graph || !graph.vertices) {
     return (
@@ -94,15 +118,16 @@ export default function GraphViewer({ graph, label, height = 400, colorMap }) {
     );
   }
 
-  const isLarge = graph.vertices.length > COSE_NODE_LIMIT;
-
   return (
     <div>
       <div className="mb-1.5 text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
         {label}
         {isLarge && (
-          <span className="text-gray-400 dark:text-gray-500" title="Büyük grafiklerde tarayıcıyı kilitleyen fizik-tabanlı yerleşim yerine hızlı bir ızgara düzeni kullanılır.">
-            (büyük grafik: hızlı düzen)
+          <span
+            className="text-gray-400 dark:text-gray-500"
+            title="Büyük grafiklerde tarayıcıyı kilitleyen fizik-tabanlı yerleşim yerine, en çok bağlantılı düğümlerin küçük bir alt kümesi gösterilir."
+          >
+            (büyük grafik: en bağlantılı {TOP_N_FOR_LARGE_GRAPHS}/{graph.vertices.length} düğüm)
           </span>
         )}
       </div>
@@ -111,7 +136,7 @@ export default function GraphViewer({ graph, label, height = 400, colorMap }) {
           elements={elements}
           style={{ width: '100%', height: '100%' }}
           stylesheet={cyStyles}
-          layout={layoutFor(graph.vertices.length)}
+          layout={COSE_LAYOUT}
           cy={(cy) => { cyRef.current = cy; }}
         />
       </div>

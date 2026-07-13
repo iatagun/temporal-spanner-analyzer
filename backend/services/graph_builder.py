@@ -67,7 +67,7 @@ def _is_content_word(word: str, pos: str = "") -> bool:
     return _is_not_stopword(word)
 
 
-def _compute_pmi(
+def compute_npmi(
     word_rows: list[list[str]],
     min_codf: int = 2,
 ) -> dict[tuple[str, str], float]:
@@ -187,29 +187,35 @@ def _build_graph(
     collected: list[tuple[float | None, list[str]]],
     pmi_threshold: float,
     validate_dates: bool,
-) -> tuple[GraphSchema, list[str], int]:
+) -> tuple[GraphSchema, list[str], int, list[tuple[float, list[str]]]]:
     """Shared final stage for parse_csv/parse_json/parse_corpus_rows: PMI
     computation + edge/vertex assembly. `collected` pairs a resolved label
     (or None if unresolved) with its already stopword-filtered word list.
+
+    Also returns the resolved (label, words) documents themselves --
+    trend_analyzer needs these past this point to recompute NPMI per time
+    window rather than only ever slicing the one corpus-global edge set.
     """
     if validate_dates:
         _validate_date_coverage(collected)
 
     word_only_rows = [words for _, words in collected]
-    pmi = _compute_pmi(word_only_rows)
+    pmi = compute_npmi(word_only_rows)
 
     word_set: set[str] = set()
     edges: list[EdgeSchema] = []
     dates: list[str] = []
+    documents: list[tuple[float, list[str]]] = []
     rows_parsed = 0
 
     for label_val, words in collected:
         label = label_val if label_val is not None else _UNRESOLVED_LABEL_FALLBACK
         _words_to_edges_filtered(words, label, word_set, edges, dates, pmi, pmi_threshold)
+        documents.append((label, words))
         rows_parsed += 1
 
     graph = GraphSchema(vertices=sorted(word_set), edges=edges)
-    return graph, dates, rows_parsed
+    return graph, dates, rows_parsed, documents
 
 
 def _collect_rows(rows: list[list[str]], date_idx: int, words_idx: int | None):
@@ -237,7 +243,7 @@ def _collect_rows(rows: list[list[str]], date_idx: int, words_idx: int | None):
 
 def parse_csv(
     content: bytes, pmi_threshold: float = 0.0
-) -> tuple[GraphSchema, list[str], int, int]:
+) -> tuple[GraphSchema, list[str], int, int, list[tuple[float, list[str]]]]:
     text = content.decode("utf-8-sig")
     reader = csv.reader(io.StringIO(text))
     try:
@@ -261,13 +267,13 @@ def parse_csv(
         else:
             collected, stopword_count = _collect_rows(rows[1:], 0, None)
 
-    graph, dates, rows_parsed = _build_graph(collected, pmi_threshold, validate_dates=True)
-    return graph, dates, rows_parsed, stopword_count
+    graph, dates, rows_parsed, documents = _build_graph(collected, pmi_threshold, validate_dates=True)
+    return graph, dates, rows_parsed, stopword_count, documents
 
 
 def parse_corpus_rows(
     rows: list[tuple[str, list[tuple[str, str]]]], pmi_threshold: float = 0.0
-) -> tuple[GraphSchema, list[str], int, int]:
+) -> tuple[GraphSchema, list[str], int, int, list[tuple[float, list[str]]]]:
     collected: list[tuple[float | None, list[str]]] = []
     stopword_count = 0
     for date_str, word_pos_pairs in rows:
@@ -284,13 +290,13 @@ def parse_corpus_rows(
         if len(filtered) >= 2:
             collected.append((label, filtered))
 
-    graph, dates, rows_parsed = _build_graph(collected, pmi_threshold, validate_dates=True)
-    return graph, dates, rows_parsed, stopword_count
+    graph, dates, rows_parsed, documents = _build_graph(collected, pmi_threshold, validate_dates=True)
+    return graph, dates, rows_parsed, stopword_count, documents
 
 
 def parse_json(
     content: bytes, pmi_threshold: float = 0.0
-) -> tuple[GraphSchema, list[str], int, int]:
+) -> tuple[GraphSchema, list[str], int, int, list[tuple[float, list[str]]]]:
     data = json.loads(content.decode("utf-8-sig"))
 
     docs = data if isinstance(data, list) else data.get("documents", data.get("data", []))
@@ -336,5 +342,5 @@ def parse_json(
         if len(filtered) >= 2:
             collected.append((label_val, filtered))
 
-    graph, dates, rows_parsed = _build_graph(collected, pmi_threshold, validate_dates=True)
-    return graph, dates, rows_parsed, stopword_count
+    graph, dates, rows_parsed, documents = _build_graph(collected, pmi_threshold, validate_dates=True)
+    return graph, dates, rows_parsed, stopword_count, documents

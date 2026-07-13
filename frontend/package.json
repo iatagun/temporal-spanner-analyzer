@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@tailwindcss/postcss": "^4.3.1",
@@ -15,5 +16,8 @@
     "react-cytoscapejs": "^2.0.0",
     "react-dom": "19.2.4",
     "tailwindcss": "^4.3.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.61.1"
   }
 }

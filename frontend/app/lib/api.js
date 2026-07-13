@@ -44,8 +44,13 @@ export function computeSpanner(graph, opts = {}) {
   });
 }
 
-export function computeTrends(graph, windows = 10) {
-  return post('/api/trends', { graph, windows });
+export function computeTrends(graph, windows = 10, opts = {}) {
+  return post('/api/trends', {
+    graph,
+    windows,
+    raw_documents: opts.rawDocuments || [],
+    pmi_threshold: opts.pmiThreshold ?? 0.15,
+  });
 }
 
 export function computeCompare(graph1, graph2) {
@@ -61,8 +66,14 @@ export function uploadCSV(file, pmiThreshold) {
   return upload('/api/upload', fd);
 }
 
-export function searchWordCliques(graph, word, windows = 10) {
-  return post('/api/word-cliques', { graph, word, windows });
+export function searchWordCliques(graph, word, windows = 10, opts = {}) {
+  return post('/api/word-cliques', {
+    graph,
+    word,
+    windows,
+    raw_documents: opts.rawDocuments || [],
+    pmi_threshold: opts.pmiThreshold ?? 0.15,
+  });
 }
 
 export function checkClique(graph, words) {

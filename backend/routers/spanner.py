@@ -6,14 +6,14 @@ from xml.sax.saxutils import escape as xml_escape
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 from fastapi.responses import Response
 
-from backend.models import SpannerRequest, SpannerResponse, UploadResponse
+from backend.models import SpannerRequest, SpannerResponse, UploadResponse, RawDocumentSchema
 from backend.services.graph_builder import parse_csv, parse_json, parse_corpus_rows
 from backend.services.corpus_parser import detect_and_parse
 from backend.services.spanner_service import build_spanner_response, enumerate_cliques
 
 router = APIRouter()
 
-# NPMI is bounded to [-1, 1] (see graph_builder._compute_pmi); 0.15 is a
+# NPMI is bounded to [-1, 1] (see graph_builder.compute_npmi); 0.15 is a
 # small positive floor that drops chance-level and weakly-associated pairs
 # while keeping real collocations. Actually wired to /api/upload's
 # pmi_threshold form field below -- it used to be a hardcoded constant that
@@ -79,15 +79,15 @@ def upload_csv(
                     "CoNLL-U: tab-separated columns with word/lemma in column 2/3. "
                     "VRT: <text> tags with tab-separated word lines."
                 )
-            graph, dates, rows_parsed, stopwords_filtered = parse_corpus_rows(
+            graph, dates, rows_parsed, stopwords_filtered, documents = parse_corpus_rows(
                 rows, pmi_threshold=pmi_threshold
             )
         elif is_json:
-            graph, dates, rows_parsed, stopwords_filtered = parse_json(
+            graph, dates, rows_parsed, stopwords_filtered, documents = parse_json(
                 content, pmi_threshold=pmi_threshold
             )
         else:
-            graph, dates, rows_parsed, stopwords_filtered = parse_csv(
+            graph, dates, rows_parsed, stopwords_filtered, documents = parse_csv(
                 content, pmi_threshold=pmi_threshold
             )
     except ValueError as e:
@@ -99,6 +99,7 @@ def upload_csv(
         time_range=[min(dates), max(dates)] if dates else ["", ""],
         stopwords_filtered=stopwords_filtered,
         pmi_threshold=pmi_threshold,
+        raw_documents=[RawDocumentSchema(label=label, words=words) for label, words in documents],
     )
 
 

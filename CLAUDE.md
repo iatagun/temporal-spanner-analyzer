@@ -23,30 +23,41 @@ cd frontend && npm run dev    # http://localhost:3004
 ## Test
 
 ```bash
-python -m pytest tests/ -v                      # 37 test
+python -m pytest tests/ -v                      # 84 test
 python -m pytest tests/ -v -k test_upload       # spesifik test
+
+cd frontend && npx playwright test              # e2e smoke testleri (backend+frontend'i kendi başlatır)
 ```
 
 ## Mimari
 
 ```
 frontend/               Next.js 16 + React 19 + Tailwind CSS v4
+  next.config.js        allowedDevOrigins (127.0.0.1 dahil -- yoksa dev
+                        sunucusuna 127.0.0.1 üzerinden bağlanan bir istemci
+                        HMR/hydration kaynaklarını sessizce kaybeder ve
+                        hiçbir tıklama React'e ulaşmaz; bkz. e2e/ notları)
+  playwright.config.js  e2e testleri (backend+frontend'i webServer olarak başlatır)
+  e2e/                  smoke.spec.js + fixtures/ (büyük-grafik regresyon testi dahil)
   app/
     page.js             Ana sayfa (durum yönetimi + orkestrasyon)
     components/         Header, ControlPanel, TabBar, TimeRangeSlider,
                         MetricCards, SpannerView, CompareView,
                         TrendsView, ExploreView, GraphViewer,
-                        LeftSidebar, RightSidebar, LoadingSkeleton
-    lib/                api.js (API istemcisi), utils.js (formatTime, BK, renk)
+                        LeftSidebar, RightSidebar, LoadingSkeleton,
+                        TruncatedWarning
+    lib/                api.js (API istemcisi), utils.js (formatTime, BK, renk),
+                        palette.js (dataviz paleti, tek kaynak klik rengi)
     public/             sample.conllu (örnek derlem)
 
 backend/
-  main.py               FastAPI uygulaması, CORS (.env'den)
+  main.py               FastAPI uygulaması, CORS (.env'den), logging, middleware
+  middleware.py          MaxBodySizeMiddleware, RateLimitMiddleware
   models.py             Pydantic modelleri
   routers/              spanner, trends, compare, explore endpoint'leri
   services/
     graph_builder.py    CSV/JSON/CoNLL-U/VRT ayrıştırma, NPMI hesaplama
-    graph_utils.py      Bron–Kerbosch (Tomita pivot + budama)
+    graph_utils.py      Bron–Kerbosch (Tomita pivot + bütçe + budama)
     spanner_service.py  Pipeline orkestratörü (doğrulama opsiyonel)
     trend_analyzer.py   Zaman pencereli klik evrimi (bisect + Jaccard)
     corpus_parser.py    CoNLL-U / VRT format ayrıştırıcı
@@ -79,12 +90,19 @@ spanner/                Saf Python algoritma kütüphanesi
 - **PMI eşiği artık gerçekten çalışıyor:** `/api/upload` bir `pmi_threshold`
   form alanı kabul eder (varsayılan `0.15`, NPMI [-1,1] ölçeğinde), yükleme
   anında hangi çiftlerin kenar olacağını belirler. Yükleme sonrası
-  spanner/trend/compare uçları bu sabitlenmiş kenarlar üzerinden çalışır —
+  spanner/compare uçları bu sabitlenmiş kenarlar üzerinden çalışır —
   eşiği değiştirmek dosyayı yeniden yüklemeyi gerektirir.
-- **Pencere-içi (per-window) PMI yeniden hesaplama yapılmıyor** — `trend_analyzer.py`
-  tek bir global NPMI'den süzülen kenarları zaman dilimlerine bölüyor. Bu,
-  bilinçli bir kapsam dışı bırakma; "yerel-zamanda anlamlılık" ayrı bir
-  mimari tartışma.
+- **Pencere-içi (per-window) PMI yeniden hesaplanıyor:** `/api/upload`
+  ham `(tarih, kelimeler)` satırlarını da (`raw_documents`) döndürür;
+  istemci bunu state'te tutup `/api/trends` ve `/api/word-cliques`'e geri
+  gönderir. Bu uçlar, sağlanırsa, `graph.edges`'i zaman dilimlerine
+  bölmek yerine her pencerenin NPMI'sini kendi dokümanlarından bağımsız
+  hesaplar (`trend_analyzer.compute_npmi` çağrısı) — bir çift küresel
+  olarak eşiği geçemese bile tek bir zaman diliminde güçlü şekilde
+  anlamlı olabilir (ya da tersi). Backend durumsuz kalır: sunucu tarafında
+  oturum/önbellek yoktur (bkz. `test_upload_response_has_no_dead_session_id_field`),
+  `raw_documents` boş/eksik gönderilirse eski küresel-kenar-dilimleme
+  davranışına geri düşülür.
 
 ## Ortam Değişkenleri
 
@@ -92,7 +110,9 @@ spanner/                Saf Python algoritma kütüphanesi
 |----------|------|------------|
 | `CORS_ORIGINS` | İzin verilen origin'ler (virgülle) | `localhost:3004` |
 | `SPANNER_VERIFY` | Spanner doğrulaması (`1`/`true`) | kapalı |
-| `MAX_UPLOAD_BYTES` | `/api/upload` boyut limiti (byte) | `5242880` (5MB) |
+| `MAX_UPLOAD_BYTES` | Yükleme/istek gövdesi boyut limiti (byte) | `5242880` (5MB) |
+| `RATE_LIMIT_PER_MINUTE` | IP başına dakikalık istek limiti (`0`=kapalı) | `30` |
+| `LOG_LEVEL` | Backend log seviyesi | `INFO` |
 | `NEXT_PUBLIC_API_URL` | Frontend API adresi | `http://127.0.0.1:8000` |
 
 ## Deployment

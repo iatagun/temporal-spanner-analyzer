@@ -5,7 +5,7 @@ import { formatTime } from '../lib/utils';
 import { searchWordCliques, checkClique } from '../lib/api';
 import TruncatedWarning from './TruncatedWarning';
 
-export default function ExploreView({ fullGraph, onSample }) {
+export default function ExploreView({ fullGraph, onSample, rawDocuments, pmiThreshold }) {
   const hasGraph = fullGraph && fullGraph.vertices && fullGraph.vertices.length > 0;
   const [activeView, setActiveView] = useState('word');
 
@@ -22,10 +22,10 @@ export default function ExploreView({ fullGraph, onSample }) {
   const searchWord = useCallback(async () => {
     if (!wordQuery.trim() || !fullGraph) return;
     setWordLoading(true); setWordError(null);
-    try { setWordData(await searchWordCliques(fullGraph, wordQuery.trim(), 10)); }
+    try { setWordData(await searchWordCliques(fullGraph, wordQuery.trim(), 10, { rawDocuments, pmiThreshold })); }
     catch (e) { setWordError(e.message); }
     finally { setWordLoading(false); }
-  }, [wordQuery, fullGraph]);
+  }, [wordQuery, fullGraph, rawDocuments, pmiThreshold]);
 
   const checkCliqueHandler = useCallback(async () => {
     const words = cliqueWords.split(',').map(w => w.trim()).filter(Boolean);

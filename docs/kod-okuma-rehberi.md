@@ -523,7 +523,7 @@ Ali'nin komşuları zamana göre sıralanır. Veli'nin bu sıradaki indeksini d�
 
 ### Aşama 3: Veri Girişi (10 dk)
 
-**Dosyaları oku**: `backend/services/graph_builder.py` (parse_csv, parse_json, _compute_pmi)
+**Dosyaları oku**: `backend/services/graph_builder.py` (parse_csv, parse_json, compute_npmi)
 
 ```
 Neye bak: CSV/JSON'den GraphSchema'ya dönüşüm.
