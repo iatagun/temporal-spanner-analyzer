@@ -161,7 +161,7 @@ def test_parse_json_preserves_explicit_zero_date():
         {"date": 0, "tarih": "2022-06-01", "words": ["elma", "armut"]},
         {"date": 0, "tarih": "2022-06-01", "words": ["elma", "armut"]},
     ]).encode()
-    graph, dates, rows_parsed, _, _ = parse_json(content)
+    graph, dates, rows_parsed, _, _, _, _ = parse_json(content)
     assert rows_parsed == 2
     assert dates == ["0.0", "0.0"]
 
@@ -206,11 +206,13 @@ def test_compute_association_measures_matches_hand_computed_values():
     # below are hand-derived from the standard formulas (Dunning 1993 for
     # log-likelihood) and cross-checked against the implementation.
     rows = [["x", "y"], ["x", "y"], ["x"], ["x"], ["x"], ["z", "w"]]
-    scores = compute_association_measures(rows)["x", "y"]
-    assert scores["npmi"] == pytest.approx(0.16596, abs=1e-4)
-    assert scores["dice"] == pytest.approx(4 / 7, abs=1e-6)
-    assert scores["t_score"] == pytest.approx(0.23570, abs=1e-4)
-    assert scores["log_likelihood"] == pytest.approx(0.90805, abs=1e-4)
+    scores, truncated = compute_association_measures(rows)
+    pair_scores = scores["x", "y"]
+    assert truncated is False
+    assert pair_scores["npmi"] == pytest.approx(0.16596, abs=1e-4)
+    assert pair_scores["dice"] == pytest.approx(4 / 7, abs=1e-6)
+    assert pair_scores["t_score"] == pytest.approx(0.23570, abs=1e-4)
+    assert pair_scores["log_likelihood"] == pytest.approx(0.90805, abs=1e-4)
 
 
 def test_compute_association_measures_respects_min_codf_for_every_measure():
@@ -218,13 +220,40 @@ def test_compute_association_measures_respects_min_codf_for_every_measure():
     # not just gated out of one measure -- since all four measures are
     # computed from the same codf/df pass.
     rows = [["a", "b"], ["a", "b"], ["c", "d"], ["c", "d"], ["a", "b"], ["c", "d"], ["e", "f"]]
-    scores = compute_association_measures(rows)
+    scores, _truncated = compute_association_measures(rows)
     assert ("e", "f") not in scores
-    assert set(scores[("a", "b")].keys()) == {"npmi", "log_likelihood", "dice", "t_score"}
+    assert set(scores[("a", "b")].keys()) == {"npmi", "log_likelihood", "dice", "t_score", "adjacency_ratio"}
+
+
+def test_compute_association_measures_adjacency_ratio_detects_mwe_candidates():
+    # "yapay" and "zeka" are ALWAYS immediate neighbors (a multi-word-
+    # expression candidate like "yapay zeka") -- adjacency_ratio should be
+    # 1.0. "zeka" and "veri" co-occur equally often but are never
+    # adjacent (always separated by other words) -- adjacency_ratio
+    # should be 0.0, even though both pairs have the same codf.
+    rows = [
+        ["yapay", "zeka", "buyuk", "veri"],
+        ["yapay", "zeka", "kucuk", "veri"],
+    ]
+    scores, _truncated = compute_association_measures(rows, min_codf=2)
+    assert scores[("yapay", "zeka")]["adjacency_ratio"] == pytest.approx(1.0)
+    assert scores[("veri", "zeka")]["adjacency_ratio"] == pytest.approx(0.0)
+
+
+def test_compute_association_measures_budget_truncates_and_reports_it():
+    # A pathologically dense set of documents (many docs, tiny shared
+    # vocabulary) must stop early and report truncated=True when a budget
+    # is given -- matching graph_utils.maximal_cliques' same pattern.
+    rows = [["a", "b", "c", "d", "e"]] * 50
+    scores_unbounded, truncated_unbounded = compute_association_measures(rows, budget=None)
+    scores_bounded, truncated_bounded = compute_association_measures(rows, budget=1)
+    assert truncated_unbounded is False
+    assert truncated_bounded is True
+    assert len(scores_bounded) <= len(scores_unbounded)
 
 
 def test_compute_npmi_is_a_thin_view_over_association_measures():
     rows = [["x", "y"], ["x", "y"], ["x"], ["x"], ["x"], ["z", "w"]]
     npmi_only = compute_npmi(rows)
-    full = compute_association_measures(rows)
+    full, _truncated = compute_association_measures(rows)
     assert npmi_only[("x", "y")] == full[("x", "y")]["npmi"]

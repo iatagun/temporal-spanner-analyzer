@@ -87,6 +87,15 @@ class UploadResponse(BaseModel):
     pmi_threshold: float = 0.0
     association_measure: AssociationMeasure = "npmi"
     raw_documents: List[RawDocumentSchema] = []
+    # Only meaningful when the upload's `lemmatize` form field was true
+    # (CSV/JSON only -- CoNLL-U/VRT already prefer a LEMMA column and
+    # never set these). lemmatized_count/lemmatized_total let the client
+    # show "X/Y words (Z%) actually analyzed" instead of silently trusting
+    # a lemmatizer that may have fallen back to the original word for
+    # domain-specific or non-Turkish terms -- see lemmatizer.lemmatize_tr.
+    # Both stay 0 when lemmatize=False.
+    lemmatized_count: int = 0
+    lemmatized_total: int = 0
 
 
 class CliqueSnapshot(BaseModel):

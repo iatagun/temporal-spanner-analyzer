@@ -8,6 +8,13 @@ from backend.models import (
 from backend.services.graph_builder import compute_association_measures
 from backend.services.graph_utils import maximal_cliques
 
+# See compute_association_measures' `budget` param -- this recompute runs
+# once PER WINDOW (not once for the whole corpus like /api/upload), so a
+# narrow, densely-repeating vocabulary needs a real cap here. Calibrated
+# against a measured pathological case (a synthetic corpus repeating the
+# same ~4400-word vocabulary across thousands of documents).
+WINDOW_ASSOCIATION_BUDGET = 100_000
+
 
 def _jaccard(a: set, b: set) -> float:
     if not a and not b:
@@ -78,7 +85,12 @@ def _windows_from_raw_documents(
     versa -- this is the only way to surface that. `measure` must match
     whichever association measure the corpus was uploaded with, or
     "significant" silently means something different here than it did at
-    upload time."""
+    upload time.
+
+    Uses WINDOW_ASSOCIATION_BUDGET (see compute_association_measures) since
+    this recompute runs once per window instead of once for the whole
+    corpus -- a narrow, densely-repeating vocabulary can otherwise make each
+    window's `codf` approach the full pair space."""
     docs_sorted = sorted(raw_documents, key=lambda d: d[0])
     doc_labels = [d[0] for d in docs_sorted]
     doc_words = [d[1] for d in docs_sorted]
@@ -100,7 +112,9 @@ def _windows_from_raw_documents(
         end_idx = bisect_left(doc_labels, we)
         window_docs = doc_words[start_idx:end_idx]
 
-        scores = compute_association_measures(window_docs)
+        scores, measures_truncated = compute_association_measures(
+            window_docs, budget=WINDOW_ASSOCIATION_BUDGET
+        )
         window_adj: dict[str, set[str]] = {}
         edge_count = 0
         for (u, v), pair_scores in scores.items():
@@ -111,8 +125,8 @@ def _windows_from_raw_documents(
 
         window_edges.append(edge_count)
 
-        cliques, truncated = maximal_cliques(window_adj, min_size=2)
-        any_truncated = any_truncated or truncated
+        cliques, bk_truncated = maximal_cliques(window_adj, min_size=2)
+        any_truncated = any_truncated or bk_truncated or measures_truncated
         window_cliques.append(cliques)
 
     return t_min, t_max, step, window_edges, window_cliques, any_truncated
@@ -147,12 +161,33 @@ def compute_trends(
         active_timelines = [(i, tl) for i, tl in enumerate(timelines) if tl.death is None]
         last_snap_sets = [(i, tl, set(tl.snapshots[-1].members)) for i, tl in active_timelines]
 
+        # Measured bottleneck: with thousands of cliques per window and
+        # thousands of active timelines, the naive "compare every clique
+        # against every timeline" is O(cliques x timelines) -- 15.2M
+        # _jaccard calls (~70% of total runtime) on an 11MB synthetic
+        # corpus. A timeline sharing NO word with a clique has Jaccard=0
+        # and can never beat best_score's 0.0 starting value, so it could
+        # never have won anyway -- this inverted index (word -> candidate
+        # timelines) only skips comparisons that were guaranteed to lose,
+        # it does not change which timeline gets matched.
+        word_to_candidates: dict[str, list[int]] = {}
+        for pos, (_idx, _tl, snap_set) in enumerate(last_snap_sets):
+            for word in snap_set:
+                word_to_candidates.setdefault(word, []).append(pos)
+
         for c in cliques:
+            candidate_positions: set[int] = set()
+            for word in c:
+                positions = word_to_candidates.get(word)
+                if positions:
+                    candidate_positions.update(positions)
+
             best_idx = -1
             best_tl = None
             best_score = 0.0
             c_set = c
-            for idx, tl, snap_set in last_snap_sets:
+            for pos in candidate_positions:
+                idx, tl, snap_set = last_snap_sets[pos]
                 score = _jaccard(c_set, snap_set)
                 if score > best_score:
                     best_score = score

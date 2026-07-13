@@ -23,7 +23,7 @@ cd frontend && npm run dev    # http://localhost:3004
 ## Test
 
 ```bash
-python -m pytest tests/ -v                      # 105 test
+python -m pytest tests/ -v                      # 111 test
 python -m pytest tests/ -v -k test_upload       # spesifik test
 
 cd frontend && npx playwright test              # e2e smoke testleri (backend+frontend'i kendi başlatır)
@@ -135,8 +135,15 @@ spanner/                Saf Python algoritma kütüphanesi
   kendi sözde-dokümanı olur — `compute_association_measures` mekanizması
   hiç değişmeden yeniden kullanılır). Sadece HEAD/DEPREL'i gerçekten
   taşıyan CoNLL-U dosyalarında çalışır; VRT/CSV/JSON'da veya HEAD sütunu
-  boş bir CoNLL-U'da (örn. bu projenin kendi `sample.conllu`'su — sadece
-  4 sütunlu: ID/FORM/LEMMA/UPOS) `/api/upload` 400 ile reddeder.
+  boş bir CoNLL-U'da `/api/upload` 400 ile reddeder.
+- **`sample.conllu` artık HEAD/DEPREL taşıyor.** Önceden 4 sütunluydu
+  (ID/FORM/LEMMA/UPOS) — "Örnek Veri ile Dene" + "Sözdizimsel" birlikte
+  denenince 400 alınıyordu. Dosyadaki "cümleler" gerçek cümle değil,
+  tarih başına anahtar-kelime öbekleri olduğu için (bkz. dosyanın kendi
+  başlık yorumu) elle, her tanınabilir bileşik öbeği (örn. "yapay zeka",
+  "derin öğrenme") kendi zincirine ayırıp baş ismine `HEAD=0/root`
+  vererek yeniden etiketlendi — bu basitleştirilmiş bir demo etiketlemesi,
+  gerçek bir treebank çıktısı değil.
 - **CSV/JSON için Türkçe kök indirgeme (Zeyrek):** `lemmatize` (upload
   formu, varsayılan kapalı — opt-in) açılırsa her kelime stopword
   filtresinden ÖNCE `backend/services/lemmatizer.lemmatize_tr` ile köküne
@@ -149,6 +156,20 @@ spanner/                Saf Python algoritma kütüphanesi
   ödememek için önemli); ısındıktan sonra kelime başına ~3ms. Kütüphanenin
   kendi debug log'ları (`logger.warning` — her analiz için düzinelerce
   satır) bastırılıyor, yoksa üretim loglarını doldururdu.
+- **Zeyrek'in sessiz başarısızlığı görünür yapıldı.** `lemmatize_tr`
+  bilerek Zeyrek'in üst-seviye `lemmatize()` metodunu DEĞİL, alt-seviye
+  `analyze()` metodunu kullanıyor: `lemmatize()` tanımadığı bir kelime için
+  sessizce kelimeyi kendi "lemma"sı gibi geri döndürüyor (bu yüzden
+  "gerçekten analiz edildi mi" sinyali her zaman `True` çıkıyordu, tek
+  istisna boş string). `analyze()` ise Zeyrek'in kendi `pos='Unk'`
+  işaretini gösteriyor — `lemmatize_tr` artık `(lemma, analyzed)` döndürüyor,
+  `analyzed=False` sadece gerçekten `Unk` (özel terim, yabancı kelime,
+  sayı vb.) olduğunda. Noktalama gibi Zeyrek'in gerçekten tanıdığı ama
+  köklenemeyecek şeyler (`pos='Punc'`) `analyzed=True` sayılır — bu bir
+  başarısızlık değil. `UploadResponse.lemmatized_count`/`lemmatized_total`
+  bu sayımı taşır; frontend "%X kelime köklendirildi" göstererek
+  kullanıcının köklemeye ne kadar güvenebileceğini görmesini sağlar
+  (`lemmatize=False` iken ikisi de 0).
 
 ### Büyük Derlem (performans notları)
 
@@ -157,17 +178,40 @@ Sentetik ~5-27MB CoNLL-U dosyalarıyla ölçüldü (bkz. Faz 3):
   ölçüm sırasında `scores`'un HER kenar tekrarına eklenmesinin (Faz 1'in
   ilk hali) 27MB'lik bir dosyada yanıtı 203MB'a şişirdiğini bulduk;
   sadece ilk tekrara eklemek 82MB'a indirdi (yukarıdaki not).
-- **Gerçek darboğaz `/api/trends`'in pencere-içi yeniden hesabı**
-  (`trend_analyzer._windows_from_raw_documents` → `compute_association_measures`):
-  maliyeti korpus boyutuyla değil, doküman sayısı arttıkça aynı kelime
-  dağarcığı içinde anlamlı hale gelen çift SAYISIYLA büyüyor (kelime
-  dağarcığı sabitse ~O(V²)'ye doğru satüre olur). Ölçülen: 1.4MB (996
-  doküman) → 99ms; 5.4MB (3984 doküman) → 2.8s; 11MB (7968 doküman) →
-  13.5s. Bu, korpus boyutundan çok "kaç doküman, ne kadar dar bir
-  dağarcıkla" sorusuna bağlı — dar dağarcıklı/çok tekrarlı derlemler
-  küçük boyutta bile bu darboğaza çarpabilir. Şimdilik iyileştirilmedi
-  (ölç-belgeleme kapsamı); bir sonraki adım `compute_association_measures`
-  içindeki pencere-başına tam-çift-taraması olurdu.
+- **`/api/trends` yavaşlığının asıl kaynağı `compute_association_measures`
+  DEĞİLDİ — düzeltme.** Önceki not bunu suçluyordu ama sadece uç noktanın
+  toplam süresi ölçülmüştü, içeride nereye gittiği profillenmemişti.
+  Gerçek `cProfile` ölçümü: 11MB'lik bir derlemde toplam sürenin **%70'i**
+  `trend_analyzer.compute_trends`'in zaman-çizelgesi eşleştirme
+  döngüsündeki `_jaccard` çağrılarındaydı (15.2 milyon çağrı) —
+  `compute_association_measures` sadece %4'ünü, Bron-Kerbosch sadece %5'ini
+  alıyordu. Kök neden: her pencerede her yeni klik, o ana kadar aktif
+  KALAN HER zaman çizelgesiyle karşılaştırılıyordu (`O(klik × aktif
+  çizelge)`), yüzlerce/binlerce klik ve çizelgeyle bu patlıyordu.
+- **Düzeltme (davranış değişmeden):** bir zaman çizelgesi yeni klikle HİÇ
+  kelime paylaşmıyorsa Jaccard skoru zaten 0 ve `best_score`'un başlangıç
+  değeri olan 0.0'ı asla geçemez — yani zaten hiçbir zaman "en iyi eşleşme"
+  olamazdı. `compute_trends` artık kelime→aday-çizelge ters-indeksi
+  kullanıyor, sadece en az bir kelime paylaşan çizelgelerle karşılaştırıyor
+  (matematiksel olarak eşdeğer, sonuç değişmiyor — bkz.
+  `test_compute_trends_picks_best_jaccard_match_among_several_candidates`).
+  Ölçülen kazanç: 11MB'de ~13.5s → ~2.5s (uç nokta genelinde, cProfile'siz).
+- **`compute_association_measures`'a ayrıca bir `budget` parametresi
+  eklendi** (`graph_utils.maximal_cliques`'in `DEFAULT_SEARCH_BUDGET` +
+  `truncated` deseniyle aynı) — dar/tekrarlı bir kelime dağarcığı gerçekten
+  `C(V,2)`'ye doyarsa diye bir güvenlik ağı. `/api/upload`'ın küresel
+  çağrısı `budget=None` (sınırsız, zaten hızlı); `trend_analyzer`'ın
+  pencere-başına çağrısı `WINDOW_ASSOCIATION_BUDGET=100_000` kullanır
+  (27MB'lik en yoğun pencerede bile doğal tavan ~55K'da kalıyor, yani bu
+  bütçe pratikte nadiren tetiklenir — sadece daha da uç durumlar için).
+  Aşılırsa `TrendResponse.truncated` (zaten var olan alan, Bron-Kerbosch'un
+  kendi kesintisiyle paylaşılıyor) `True` olur.
+- 27MB'lik en uç durumda (aynı ~4400 kelimelik dağarcığın 20x tekrarı)
+  hâlâ ~14-15s sürüyor — bu, gerçekten yoğun/örtüşen bir korpusun doğal
+  maliyeti (Bron-Kerbosch + kalan Jaccard karşılaştırmaları), daha fazla
+  iyileştirme (ör. pencere başına klik sayısını üstten sınırlamak) sonuç
+  eksikliğine yol açacağı için bilinçli olarak bu turun kapsamı dışında
+  bırakıldı.
 
 ## Ortam Değişkenleri
 

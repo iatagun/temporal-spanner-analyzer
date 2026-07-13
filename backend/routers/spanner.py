@@ -99,6 +99,8 @@ def upload_csv(
             "VRT/CSV/JSON have no dependency information.",
         )
 
+    lemmatized_count = 0
+    lemmatized_total = 0
     try:
         if is_corpus:
             content_str = content.decode("utf-8-sig")
@@ -114,12 +116,12 @@ def upload_csv(
                 collocation_mode=collocation_mode,
             )
         elif is_json:
-            graph, dates, rows_parsed, stopwords_filtered, documents = parse_json(
-                content, pmi_threshold=pmi_threshold, measure=association_measure, lemmatize=lemmatize
+            graph, dates, rows_parsed, stopwords_filtered, documents, lemmatized_count, lemmatized_total = (
+                parse_json(content, pmi_threshold=pmi_threshold, measure=association_measure, lemmatize=lemmatize)
             )
         else:
-            graph, dates, rows_parsed, stopwords_filtered, documents = parse_csv(
-                content, pmi_threshold=pmi_threshold, measure=association_measure, lemmatize=lemmatize
+            graph, dates, rows_parsed, stopwords_filtered, documents, lemmatized_count, lemmatized_total = (
+                parse_csv(content, pmi_threshold=pmi_threshold, measure=association_measure, lemmatize=lemmatize)
             )
     except ValueError as e:
         raise HTTPException(400, str(e))
@@ -134,6 +136,8 @@ def upload_csv(
         raw_documents=[
             RawDocumentSchema(label=label, words=words, text=text) for label, words, text in documents
         ],
+        lemmatized_count=lemmatized_count,
+        lemmatized_total=lemmatized_total,
     )
 
 

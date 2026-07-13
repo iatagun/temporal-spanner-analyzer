@@ -145,6 +145,8 @@ export default function Home() {
       setUploadInfo({
         graph: data.graph,
         label: `${data.graph.vertices.length} düğüm, ${data.graph.edges.length} bağlantı`,
+        lemmatizedCount: data.lemmatized_count || 0,
+        lemmatizedTotal: data.lemmatized_total || 0,
       });
       setResult(null);
       doSpanner(initialGraph);
@@ -250,6 +252,14 @@ export default function Home() {
           {error && (
             <div className="p-3 mb-6 border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-400 text-sm animate-in">
               {error}
+            </div>
+          )}
+
+          {uploadInfo?.lemmatizedTotal > 0 && (
+            <div className="p-3 mb-6 border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 text-gray-600 dark:text-gray-400 text-sm animate-in">
+              Türkçe kök indirgeme: {uploadInfo.lemmatizedTotal} kelimeden {uploadInfo.lemmatizedCount}
+              &apos;i (%{Math.round((uploadInfo.lemmatizedCount / uploadInfo.lemmatizedTotal) * 100)}) gerçekten köklendirildi
+              {uploadInfo.lemmatizedCount < uploadInfo.lemmatizedTotal && ' — geri kalanı Zeyrek\'in tanımadığı kelimeler (özel terim, yabancı sözcük vb.), olduğu gibi bırakıldı'}.
             </div>
           )}
 

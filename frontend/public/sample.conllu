@@ -1,160 +1,167 @@
 # sample.conllu — Turkish temporal corpus sample
 # Each sentence = one time-slice; # date = YYYY-MM-DD
+# HEAD/DEPREL (columns 7/8) were added by hand to demonstrate
+# collocation_mode=syntactic: each recognizable compound noun phrase
+# (e.g. "yapay zeka") is chained head-finally with amod/compound, and
+# each phrase's own head gets HEAD=0/root. Several independent phrases
+# share one line (this corpus is a keyword list per date, not real
+# running text), so a line can have more than one root -- this is a
+# simplified, manually-annotated demo, not a treebank-quality parse.
 
 # date = 2020-01-15
-1	yapay	yapay	ADJ
-2	zeka	zeka	NOUN
-3	derin	derin	ADJ
-4	öğrenme	öğrenme	NOUN
+1	yapay	yapay	ADJ	_	_	2	amod	_	_
+2	zeka	zeka	NOUN	_	_	0	root	_	_
+3	derin	derin	ADJ	_	_	4	amod	_	_
+4	öğrenme	öğrenme	NOUN	_	_	0	root	_	_
 
 # date = 2020-03-20
-1	yapay	yapay	ADJ
-2	sinir	sinir	NOUN
-3	ağ	ağ	NOUN
-4	veri	veri	NOUN
-5	bilimi	bilim	NOUN
+1	yapay	yapay	ADJ	_	_	3	amod	_	_
+2	sinir	sinir	NOUN	_	_	3	compound	_	_
+3	ağ	ağ	NOUN	_	_	0	root	_	_
+4	veri	veri	NOUN	_	_	5	compound	_	_
+5	bilimi	bilim	NOUN	_	_	0	root	_	_
 
 # date = 2020-06-10
-1	doğal	doğal	ADJ
-2	dil	dil	NOUN
-3	işleme	işleme	NOUN
-4	yapay	yapay	ADJ
-5	zeka	zeka	NOUN
+1	doğal	doğal	ADJ	_	_	3	amod	_	_
+2	dil	dil	NOUN	_	_	3	compound	_	_
+3	işleme	işleme	NOUN	_	_	0	root	_	_
+4	yapay	yapay	ADJ	_	_	5	amod	_	_
+5	zeka	zeka	NOUN	_	_	0	root	_	_
 
 # date = 2020-09-05
-1	makine	makine	NOUN
-2	öğrenmesi	öğrenme	NOUN
-3	büyük	büyük	ADJ
-4	veri	veri	NOUN
-5	yapay	yapay	ADJ
-6	zeka	zeka	NOUN
+1	makine	makine	NOUN	_	_	2	compound	_	_
+2	öğrenmesi	öğrenme	NOUN	_	_	0	root	_	_
+3	büyük	büyük	ADJ	_	_	4	amod	_	_
+4	veri	veri	NOUN	_	_	0	root	_	_
+5	yapay	yapay	ADJ	_	_	6	amod	_	_
+6	zeka	zeka	NOUN	_	_	0	root	_	_
 
 # date = 2021-01-20
-1	transformer	transformer	NOUN
-2	modeli	model	NOUN
-3	dikkat	dikkat	NOUN
-4	mekanizması	mekanizma	NOUN
-5	derin	derin	ADJ
-6	öğrenme	öğrenme	NOUN
+1	transformer	transformer	NOUN	_	_	2	compound	_	_
+2	modeli	model	NOUN	_	_	0	root	_	_
+3	dikkat	dikkat	NOUN	_	_	4	compound	_	_
+4	mekanizması	mekanizma	NOUN	_	_	0	root	_	_
+5	derin	derin	ADJ	_	_	6	amod	_	_
+6	öğrenme	öğrenme	NOUN	_	_	0	root	_	_
 
 # date = 2021-04-12
-1	gpt	gpt	NOUN
-2	doğal	doğal	ADJ
-3	dil	dil	NOUN
-4	üretimi	üretim	NOUN
-5	yapay	yapay	ADJ
-6	zeka	zeka	NOUN
+1	gpt	gpt	NOUN	_	_	0	root	_	_
+2	doğal	doğal	ADJ	_	_	4	amod	_	_
+3	dil	dil	NOUN	_	_	4	compound	_	_
+4	üretimi	üretim	NOUN	_	_	0	root	_	_
+5	yapay	yapay	ADJ	_	_	6	amod	_	_
+6	zeka	zeka	NOUN	_	_	0	root	_	_
 
 # date = 2021-07-08
-1	görüntü	görüntü	NOUN
-2	işleme	işleme	NOUN
-3	derin	derin	ADJ
-4	öğrenme	öğrenme	NOUN
-5	evrişimli	evrişimli	ADJ
-6	sinir	sinir	NOUN
-7	ağ	ağ	NOUN
+1	görüntü	görüntü	NOUN	_	_	2	compound	_	_
+2	işleme	işleme	NOUN	_	_	0	root	_	_
+3	derin	derin	ADJ	_	_	4	amod	_	_
+4	öğrenme	öğrenme	NOUN	_	_	0	root	_	_
+5	evrişimli	evrişimli	ADJ	_	_	7	amod	_	_
+6	sinir	sinir	NOUN	_	_	7	compound	_	_
+7	ağ	ağ	NOUN	_	_	0	root	_	_
 
 # date = 2021-10-15
-1	bert	bert	NOUN
-2	ön	ön	ADP
-3	eğitimli	eğitimli	ADJ
-4	dil	dil	NOUN
-5	modeli	model	NOUN
-6	doğal	doğal	ADJ
-7	dil	dil	NOUN
-8	işleme	işleme	NOUN
+1	bert	bert	NOUN	_	_	0	root	_	_
+2	ön	ön	ADP	_	_	3	advmod	_	_
+3	eğitimli	eğitimli	ADJ	_	_	5	amod	_	_
+4	dil	dil	NOUN	_	_	5	compound	_	_
+5	modeli	model	NOUN	_	_	0	root	_	_
+6	doğal	doğal	ADJ	_	_	8	amod	_	_
+7	dil	dil	NOUN	_	_	8	compound	_	_
+8	işleme	işleme	NOUN	_	_	0	root	_	_
 
 # date = 2022-02-01
-1	difüzyon	difüzyon	NOUN
-2	modeli	model	NOUN
-3	görüntü	görüntü	NOUN
-4	üretimi	üretim	NOUN
-5	yapay	yapay	ADJ
-6	zeka	zeka	NOUN
+1	difüzyon	difüzyon	NOUN	_	_	2	compound	_	_
+2	modeli	model	NOUN	_	_	0	root	_	_
+3	görüntü	görüntü	NOUN	_	_	4	compound	_	_
+4	üretimi	üretim	NOUN	_	_	0	root	_	_
+5	yapay	yapay	ADJ	_	_	6	amod	_	_
+6	zeka	zeka	NOUN	_	_	0	root	_	_
 
 # date = 2022-05-18
-1	stable	stable	ADJ
-2	diffusion	diffusion	NOUN
-3	metin	metin	NOUN
-4	görüntü	görüntü	NOUN
-5	dönüştürücü	dönüştürücü	NOUN
+1	stable	stable	ADJ	_	_	2	amod	_	_
+2	diffusion	diffusion	NOUN	_	_	0	root	_	_
+3	metin	metin	NOUN	_	_	5	compound	_	_
+4	görüntü	görüntü	NOUN	_	_	5	compound	_	_
+5	dönüştürücü	dönüştürücü	NOUN	_	_	0	root	_	_
 
 # date = 2022-08-30
-1	chatgpt	chatgpt	NOUN
-2	büyük	büyük	ADJ
-3	dil	dil	NOUN
-4	modeli	model	NOUN
-5	sohbet	sohbet	NOUN
-6	yapay	yapay	ADJ
-7	zeka	zeka	NOUN
+1	chatgpt	chatgpt	NOUN	_	_	0	root	_	_
+2	büyük	büyük	ADJ	_	_	4	amod	_	_
+3	dil	dil	NOUN	_	_	4	compound	_	_
+4	modeli	model	NOUN	_	_	0	root	_	_
+5	sohbet	sohbet	NOUN	_	_	7	compound	_	_
+6	yapay	yapay	ADJ	_	_	7	amod	_	_
+7	zeka	zeka	NOUN	_	_	0	root	_	_
 
 # date = 2022-11-10
-1	prompt	prompt	NOUN
-2	mühendisliği	mühendislik	NOUN
-3	büyük	büyük	ADJ
-4	dil	dil	NOUN
-5	modelleri	model	NOUN
+1	prompt	prompt	NOUN	_	_	2	compound	_	_
+2	mühendisliği	mühendislik	NOUN	_	_	0	root	_	_
+3	büyük	büyük	ADJ	_	_	5	amod	_	_
+4	dil	dil	NOUN	_	_	5	compound	_	_
+5	modelleri	model	NOUN	_	_	0	root	_	_
 
 # date = 2023-01-15
-1	llm	llm	NOUN
-2	açık	açık	ADJ
-3	kaynak	kaynak	NOUN
-4	llama	llama	NOUN
-5	dil	dil	NOUN
-6	modeli	model	NOUN
+1	llm	llm	NOUN	_	_	0	root	_	_
+2	açık	açık	ADJ	_	_	3	amod	_	_
+3	kaynak	kaynak	NOUN	_	_	0	root	_	_
+4	llama	llama	NOUN	_	_	6	compound	_	_
+5	dil	dil	NOUN	_	_	6	compound	_	_
+6	modeli	model	NOUN	_	_	0	root	_	_
 
 # date = 2023-04-20
-1	çoklu	çoklu	ADJ
-2	modal	modal	ADJ
-3	yapay	yapay	ADJ
-4	zeka	zeka	NOUN
-5	görüntü	görüntü	NOUN
-6	metin	metin	NOUN
-7	ses	ses	NOUN
+1	çoklu	çoklu	ADJ	_	_	4	amod	_	_
+2	modal	modal	ADJ	_	_	4	amod	_	_
+3	yapay	yapay	ADJ	_	_	4	amod	_	_
+4	zeka	zeka	NOUN	_	_	0	root	_	_
+5	görüntü	görüntü	NOUN	_	_	0	root	_	_
+6	metin	metin	NOUN	_	_	0	root	_	_
+7	ses	ses	NOUN	_	_	0	root	_	_
 
 # date = 2023-07-05
-1	vektör	vektör	NOUN
-2	veri	veri	NOUN
-3	tabanı	taban	NOUN
-4	anlamsal	anlamsal	ADJ
-5	arama	arama	NOUN
-6	yapay	yapay	ADJ
-7	zeka	zeka	NOUN
+1	vektör	vektör	NOUN	_	_	3	compound	_	_
+2	veri	veri	NOUN	_	_	3	compound	_	_
+3	tabanı	taban	NOUN	_	_	0	root	_	_
+4	anlamsal	anlamsal	ADJ	_	_	5	amod	_	_
+5	arama	arama	NOUN	_	_	0	root	_	_
+6	yapay	yapay	ADJ	_	_	7	amod	_	_
+7	zeka	zeka	NOUN	_	_	0	root	_	_
 
 # date = 2023-10-12
-1	otonom	otonom	ADJ
-2	ajan	ajan	NOUN
-3	yapay	yapay	ADJ
-4	zeka	zeka	NOUN
-5	planlama	planlama	NOUN
-6	araç	araç	NOUN
-7	kullanımı	kullanım	NOUN
+1	otonom	otonom	ADJ	_	_	2	amod	_	_
+2	ajan	ajan	NOUN	_	_	0	root	_	_
+3	yapay	yapay	ADJ	_	_	4	amod	_	_
+4	zeka	zeka	NOUN	_	_	0	root	_	_
+5	planlama	planlama	NOUN	_	_	0	root	_	_
+6	araç	araç	NOUN	_	_	7	compound	_	_
+7	kullanımı	kullanım	NOUN	_	_	0	root	_	_
 
 # date = 2024-01-08
-1	açıklayabilir	açıklayabilir	ADJ
-2	yapay	yapay	ADJ
-3	zeka	zeka	NOUN
-4	xai	xai	NOUN
-5	şeffaflık	şeffaflık	NOUN
+1	açıklayabilir	açıklayabilir	ADJ	_	_	3	amod	_	_
+2	yapay	yapay	ADJ	_	_	3	amod	_	_
+3	zeka	zeka	NOUN	_	_	0	root	_	_
+4	xai	xai	NOUN	_	_	0	root	_	_
+5	şeffaflık	şeffaflık	NOUN	_	_	0	root	_	_
 
 # date = 2024-03-22
-1	yapay	yapay	ADJ
-2	genel	genel	ADJ
-3	zeka	zeka	NOUN
-4	ağı	ağı	NOUN
-5	tekillik	tekillik	NOUN
+1	yapay	yapay	ADJ	_	_	3	amod	_	_
+2	genel	genel	ADJ	_	_	3	amod	_	_
+3	zeka	zeka	NOUN	_	_	0	root	_	_
+4	ağı	ağı	NOUN	_	_	0	root	_	_
+5	tekillik	tekillik	NOUN	_	_	0	root	_	_
 
 # date = 2024-06-15
-1	yapay	yapay	ADJ
-2	zeka	zeka	NOUN
-3	düzenlemesi	düzenleme	NOUN
-4	avrupa	avrupa	PROPN
-5	birliği	birlik	NOUN
-6	yasa	yasa	NOUN
+1	yapay	yapay	ADJ	_	_	3	amod	_	_
+2	zeka	zeka	NOUN	_	_	3	compound	_	_
+3	düzenlemesi	düzenleme	NOUN	_	_	0	root	_	_
+4	avrupa	avrupa	PROPN	_	_	5	compound	_	_
+5	birliği	birlik	NOUN	_	_	6	nmod	_	_
+6	yasa	yasa	NOUN	_	_	0	root	_	_
 
 # date = 2024-09-01
-1	yapay	yapay	ADJ
-2	zeka	zeka	NOUN
-3	güvenliği	güvenlik	NOUN
-4	etik	etik	ADJ
-5	ilkeler	ilke	NOUN
+1	yapay	yapay	ADJ	_	_	3	amod	_	_
+2	zeka	zeka	NOUN	_	_	3	compound	_	_
+3	güvenliği	güvenlik	NOUN	_	_	0	root	_	_
+4	etik	etik	ADJ	_	_	5	amod	_	_
+5	ilkeler	ilke	NOUN	_	_	0	root	_	_

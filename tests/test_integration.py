@@ -101,7 +101,7 @@ def test_upload_association_measure_changes_gating_and_edges_carry_all_scores():
     assert len(ll_edges) == 2
     pairs = {(e["u"], e["v"]) if e["u"] <= e["v"] else (e["v"], e["u"]) for e in ll_edges}
     assert pairs == {("kedi", "kopek")}
-    assert set(ll_edges[0]["scores"].keys()) == {"npmi", "log_likelihood", "dice", "t_score"}
+    assert set(ll_edges[0]["scores"].keys()) == {"npmi", "log_likelihood", "dice", "t_score", "adjacency_ratio"}
     assert ll_edges[0]["scores"]["log_likelihood"] > 5.0
     assert ll_edges[1]["scores"] == {}
     assert r_ll.json()["association_measure"] == "log_likelihood"
@@ -151,6 +151,32 @@ def test_upload_lemmatize_collapses_inflected_forms_into_one_node():
     }
     assert ("kitap", "masa") in lemma_pairs
 
+    # lemmatize=False must not report any coverage (no attempt was made).
+    assert r_plain.json()["lemmatized_count"] == 0
+    assert r_plain.json()["lemmatized_total"] == 0
+    # lemmatize=True: both rows have 2 words each = 4 words attempted, all
+    # real Turkish nouns Zeyrek can parse -- full coverage.
+    assert r_lemma.json()["lemmatized_total"] == 4
+    assert r_lemma.json()["lemmatized_count"] == 4
+
+
+def test_upload_lemmatize_reports_partial_coverage_for_unanalyzable_words():
+    # "xyzqwerty" is outside Zeyrek's TRmorph vocabulary -- lemmatized_count
+    # must reflect that it WASN'T really analyzed (falls back to itself,
+    # see lemmatizer.lemmatize_tr), making Zeyrek's coverage gaps visible
+    # to the user instead of silently claiming full coverage.
+    csv_content = b"date,words\n2020-01-05,\"kitaplar,xyzqwerty\"\n2020-02-01,\"kitap,xyzqwerty\"\n"
+    r = client.post(
+        "/api/upload",
+        files={"file": ("test.csv", csv_content, "text/csv")},
+        data={"pmi_threshold": "-1.0", "lemmatize": "true"},
+    )
+    assert r.status_code == 200
+    d = r.json()
+    assert d["lemmatized_total"] == 4
+    assert d["lemmatized_count"] == 2  # only "kitaplar"/"kitap", not "xyzqwerty" x2
+    assert "xyzqwerty" in d["graph"]["vertices"]  # left as-is, still usable
+
 
 def test_upload_conllu_syntactic_collocation_excludes_sibling_pairs():
     # "buyuk"/"iyi" are both amod children of "ev" (siblings, not directly
@@ -177,6 +203,29 @@ def test_upload_conllu_syntactic_collocation_excludes_sibling_pairs():
     assert r.status_code == 200
     pairs = {(e["u"], e["v"]) if e["u"] <= e["v"] else (e["v"], e["u"]) for e in r.json()["graph"]["edges"]}
     assert pairs == {("buyuk", "ev"), ("ev", "iyi")}
+
+
+def test_upload_sample_conllu_supports_syntactic_collocation():
+    # Regression test: the shipped demo file used to have no HEAD/DEPREL
+    # at all (4-column CoNLL-U), so a first-time user trying "Sözdizimsel"
+    # on "Örnek Veri ile Dene" would just hit a 400. It was hand-annotated
+    # with compound-noun-phrase dependencies (see the file's own header
+    # comment) -- must now work and produce recognizable pairs like
+    # "yapay"-"zeka", which repeats across many dates in the file.
+    import os
+    sample_path = os.path.join(
+        os.path.dirname(__file__), "..", "frontend", "public", "sample.conllu"
+    )
+    with open(sample_path, "rb") as f:
+        sample_content = f.read()
+    r = client.post(
+        "/api/upload",
+        files={"file": ("sample.conllu", sample_content, "text/plain")},
+        data={"collocation_mode": "syntactic"},
+    )
+    assert r.status_code == 200
+    pairs = {(e["u"], e["v"]) if e["u"] <= e["v"] else (e["v"], e["u"]) for e in r.json()["graph"]["edges"]}
+    assert ("yapay", "zeka") in pairs
 
 
 def test_upload_rejects_syntactic_collocation_for_non_conllu():

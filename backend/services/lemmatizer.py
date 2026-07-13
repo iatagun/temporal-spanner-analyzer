@@ -26,23 +26,34 @@ def _get_analyzer():
     return _analyzer
 
 
-def lemmatize_tr(word: str) -> str:
-    """Best-effort Turkish lemma for `word`, falling back to the original
-    word for anything the analyzer can't parse (numbers, punctuation,
-    foreign words, or an unexpected internal error) -- this is a
-    best-effort normalization to reduce inflectional sparsity, not a hard
-    requirement, so any failure degrades to "leave the word as-is"."""
+def lemmatize_tr(word: str) -> tuple[str, bool]:
+    """Best-effort Turkish lemma for `word`. Returns (lemma, analyzed) --
+    `analyzed=False` means Zeyrek found NO real morphological parse
+    (numbers, foreign/domain words outside its TRmorph vocabulary, or an
+    unexpected internal error).
+
+    Deliberately uses `analyze()`, not the higher-level `lemmatize()`:
+    `lemmatize()` silently falls back to echoing the input word back as
+    its own "lemma" for a word it couldn't parse at all, which made
+    `analyzed` always True except for an empty string -- useless as a
+    coverage signal. `analyze()` instead exposes Zeyrek's own internal
+    marker for this, `Parse(pos='Unk', lemma='Unk', ...)`, which is what
+    `analyzed` actually checks below. (Note: a real parse can still
+    legitimately return pos='Punc' for punctuation, or a lemma identical
+    to the input for an already-base-form word -- neither is a failure.)
+    """
     try:
-        results = _get_analyzer().lemmatize(word)
+        result = _get_analyzer().analyze(word)
     except Exception:
-        return word
-    if not results:
-        return word
-    _, candidates = results[0]
-    if not candidates:
-        return word
+        return word, False
+    if not result or not result[0]:
+        return word, False
+    parses = [p for p in result[0] if p.pos != "Unk"]
+    if not parses:
+        return word, False
     # Prefer a lowercase (common-noun) reading over a proper-noun one so
     # e.g. "kitaplar" and a later "Kitaplar" (sentence-initial) don't
     # fragment into separate lemma nodes.
-    lowercase_candidates = [c for c in candidates if c[:1].islower()]
-    return (lowercase_candidates or candidates)[0].lower()
+    lowercase = [p.lemma for p in parses if p.lemma[:1].islower()]
+    lemma = (lowercase or [p.lemma for p in parses])[0]
+    return lemma.lower(), True

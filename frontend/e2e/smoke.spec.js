@@ -48,6 +48,24 @@ test('upload sample data, walk all four views, no console errors', async ({ page
   expect(errors, `console/page errors:\n${errors.join('\n')}`).toEqual([]);
 });
 
+test('syntactic collocation mode works with the sample data (regression)', async ({ page }) => {
+  // Regression test: the shipped sample.conllu used to have no HEAD/DEPREL
+  // at all, so trying "Sözdizimsel" on "Örnek Veri ile Dene" hit a 400.
+  // It was hand-annotated with compound-noun-phrase dependencies -- must
+  // now upload successfully.
+  const errors = trackConsoleErrors(page);
+  await page.goto('/');
+
+  await page.getByRole('button', { name: /Gelişmiş/ }).click();
+  await page.getByRole('combobox').filter({ hasText: 'Pencere' }).selectOption('syntactic');
+
+  await page.getByRole('button', { name: 'Örnek Veri ile Dene' }).click();
+  await expect(page.getByRole('button', { name: /^Spanner \(/ })).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByText(/indirildi/)).toBeVisible();
+
+  expect(errors, `console/page errors:\n${errors.join('\n')}`).toEqual([]);
+});
+
 test('large-graph upload does not freeze the page (regression)', async ({ page }) => {
   // Regression test for the multi-minute cytoscape 'cose' layout freeze:
   // upload a file with a large-ish vocabulary and confirm the page stays

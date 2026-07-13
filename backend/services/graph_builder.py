@@ -108,11 +108,14 @@ ASSOCIATION_MEASURES: set[str] = {"npmi", "log_likelihood", "dice", "t_score"}
 def compute_association_measures(
     word_rows: list[list[str]],
     min_codf: int = 2,
-) -> dict[tuple[str, str], dict[str, float]]:
+    budget: int | None = None,
+) -> tuple[dict[tuple[str, str], dict[str, float]], bool]:
     """Computes four standard corpus-linguistics association measures for
     every content-word pair from one shared pass over df/codf/N -- corpus
     linguists routinely want to see (or report) more than just NPMI, and a
     tool that only ever offers one measure invites "why this one" scrutiny.
+    Also tracks adjacency (for multi-word-expression detection, see
+    `adjacency_ratio` below).
 
     - npmi: normalized PMI, bounded [-1, 1]. Plain PMI over-weights rare
       pairs (seen twice out of two docs can outscore seen 500/1000); NPMI
@@ -124,19 +127,40 @@ def compute_association_measures(
     - dice: 2*codf / (df[w1]+df[w2]), bounded [0, 1].
     - t_score: (observed - expected) / sqrt(observed) -- classic collocation
       t-test, conventionally significant around 1.96-2.0.
+    - adjacency_ratio: fraction of this pair's co-occurrences where the two
+      words were IMMEDIATE neighbors (not just anywhere in the same
+      document) -- a necessary condition for a multi-word expression like
+      "yapay zeka". Not a gating measure (never in ASSOCIATION_MEASURES,
+      can't be selected as the upload threshold), purely informational.
 
     min_codf drops pairs seen fewer than min_codf times before any measure
     is computed -- a pair seen once is coincidence regardless of which
     measure reads it.
+
+    `budget` caps the number of distinct pairs tracked (len(codf)),
+    checked once per document (cheap) -- same budget+truncated pattern as
+    graph_utils.maximal_cliques's Bron-Kerbosch search. A narrow,
+    densely-repeating vocabulary spread across many documents can make
+    `codf` approach the full C(V,2) pair space (measured: 13.5s at just
+    11MB in that pathological case, see CLAUDE.md's "Büyük Derlem" note).
+    None (default) is unbounded -- /api/upload's one-shot corpus-global
+    call uses that (already measured fast even at 27MB); trend_analyzer's
+    per-window recompute passes a real budget since it repeats this
+    computation once per window.
     """
     N = len(word_rows)
     if N < 2:
-        return {}
+        return {}, False
 
     df: dict[str, int] = defaultdict(int)
     codf: dict[tuple[str, str], int] = defaultdict(int)
+    adjacency_count: dict[tuple[str, str], int] = defaultdict(int)
+    truncated = False
 
     for words in word_rows:
+        if budget is not None and len(codf) >= budget:
+            truncated = True
+            break
         unique = set(words)
         for w in unique:
             df[w] += 1
@@ -145,6 +169,14 @@ def compute_association_measures(
             for j in range(i + 1, len(sorted_unique)):
                 key = (sorted_unique[i], sorted_unique[j])
                 codf[key] += 1
+        # Adjacency needs the ORIGINAL word order -- sorted_unique above
+        # (used for codf) is alphabetical, not positional.
+        for i in range(len(words) - 1):
+            a, b = words[i], words[i + 1]
+            if a == b:
+                continue
+            key = (a, b) if a <= b else (b, a)
+            adjacency_count[key] += 1
 
     measures: dict[tuple[str, str], dict[str, float]] = {}
     for (w1, w2), codf_val in codf.items():
@@ -192,9 +224,10 @@ def compute_association_measures(
             "log_likelihood": g2,
             "dice": dice,
             "t_score": t_score,
+            "adjacency_ratio": adjacency_count.get((w1, w2), 0) / codf_val,
         }
 
-    return measures
+    return measures, truncated
 
 
 def compute_npmi(
@@ -203,10 +236,8 @@ def compute_npmi(
 ) -> dict[tuple[str, str], float]:
     """NPMI-only view over compute_association_measures, kept for call
     sites that only need the one score."""
-    return {
-        pair: scores["npmi"]
-        for pair, scores in compute_association_measures(word_rows, min_codf).items()
-    }
+    measures, _truncated = compute_association_measures(word_rows, min_codf)
+    return {pair: scores["npmi"] for pair, scores in measures.items()}
 
 
 # Fallback numeric label for rows whose date could not be parsed (or was
@@ -322,7 +353,10 @@ def _build_graph(
         _validate_date_coverage(collected)
 
     word_only_rows = [words for _, words, _ in collected]
-    scores = compute_association_measures(word_only_rows)
+    # budget=None (unbounded) -- this one-shot corpus-global computation is
+    # already measured fast even at 27MB (see CLAUDE.md); only the
+    # per-window recompute in trend_analyzer needs a real budget.
+    scores, _truncated = compute_association_measures(word_only_rows)
 
     word_set: set[str] = set()
     edges: list[EdgeSchema] = []
@@ -346,6 +380,8 @@ def _build_graph(
 def _collect_rows(rows: list[list[str]], date_idx: int, words_idx: int | None, lemmatize: bool = False):
     collected: list[tuple[float | None, list[str], str]] = []
     stopword_count = 0
+    lemmatized_count = 0
+    lemmatized_total = 0
     for row in rows:
         if words_idx is not None:
             if len(row) <= max(date_idx, words_idx):
@@ -365,19 +401,26 @@ def _collect_rows(rows: list[list[str]], date_idx: int, words_idx: int | None, l
         # we decide whether it's a stopword -- and so raw_text (kept for
         # KWIC/concordance display) stays the real, unlemmatized sentence.
         if lemmatize:
-            raw_words = [lemmatize_tr(w) for w in raw_words]
+            new_words = []
+            for w in raw_words:
+                lemma, analyzed = lemmatize_tr(w)
+                new_words.append(lemma)
+                lemmatized_total += 1
+                if analyzed:
+                    lemmatized_count += 1
+            raw_words = new_words
 
         filtered = [w for w in raw_words if _is_not_stopword(w)]
         stopword_count += len(raw_words) - len(filtered)
         if len(filtered) >= 2:
             collected.append((label_val, filtered, raw_text))
 
-    return collected, stopword_count
+    return collected, stopword_count, lemmatized_count, lemmatized_total
 
 
 def parse_csv(
     content: bytes, pmi_threshold: float = 0.0, measure: str = "npmi", lemmatize: bool = False
-) -> tuple[GraphSchema, list[str], int, int, list[tuple[float, list[str]]]]:
+) -> tuple[GraphSchema, list[str], int, int, list[tuple[float, list[str]]], int, int]:
     text = content.decode("utf-8-sig")
     reader = csv.reader(io.StringIO(text))
     try:
@@ -393,18 +436,24 @@ def parse_csv(
     if "words" in header and "date" in header:
         date_idx = header.index("date")
         words_idx = header.index("words")
-        collected, stopword_count = _collect_rows(rows[1:], date_idx, words_idx, lemmatize)
+        collected, stopword_count, lemmatized_count, lemmatized_total = _collect_rows(
+            rows[1:], date_idx, words_idx, lemmatize
+        )
     else:
         test_date = parse_label(rows[0][0])
         if test_date is not None:
-            collected, stopword_count = _collect_rows(rows, 0, None, lemmatize)
+            collected, stopword_count, lemmatized_count, lemmatized_total = _collect_rows(
+                rows, 0, None, lemmatize
+            )
         else:
-            collected, stopword_count = _collect_rows(rows[1:], 0, None, lemmatize)
+            collected, stopword_count, lemmatized_count, lemmatized_total = _collect_rows(
+                rows[1:], 0, None, lemmatize
+            )
 
     graph, dates, rows_parsed, documents = _build_graph(
         collected, pmi_threshold, validate_dates=True, measure=measure
     )
-    return graph, dates, rows_parsed, stopword_count, documents
+    return graph, dates, rows_parsed, stopword_count, documents, lemmatized_count, lemmatized_total
 
 
 def parse_corpus_rows(
@@ -476,13 +525,15 @@ def parse_corpus_rows(
 
 def parse_json(
     content: bytes, pmi_threshold: float = 0.0, measure: str = "npmi", lemmatize: bool = False
-) -> tuple[GraphSchema, list[str], int, int, list[tuple[float, list[str], str]]]:
+) -> tuple[GraphSchema, list[str], int, int, list[tuple[float, list[str], str]], int, int]:
     data = json.loads(content.decode("utf-8-sig"))
 
     docs = data if isinstance(data, list) else data.get("documents", data.get("data", []))
 
     collected: list[tuple[float | None, list[str], str]] = []
     stopword_count = 0
+    lemmatized_count = 0
+    lemmatized_total = 0
 
     for doc in docs:
         if isinstance(doc, dict):
@@ -523,7 +574,14 @@ def parse_json(
             continue
 
         if lemmatize:
-            raw_words = [lemmatize_tr(str(w)) for w in raw_words]
+            new_words = []
+            for w in raw_words:
+                lemma, analyzed = lemmatize_tr(str(w))
+                new_words.append(lemma)
+                lemmatized_total += 1
+                if analyzed:
+                    lemmatized_count += 1
+            raw_words = new_words
 
         filtered = [w for w in raw_words if _is_not_stopword(w)]
         stopword_count += len(raw_words) - len(filtered)
@@ -533,4 +591,4 @@ def parse_json(
     graph, dates, rows_parsed, documents = _build_graph(
         collected, pmi_threshold, validate_dates=True, measure=measure
     )
-    return graph, dates, rows_parsed, stopword_count, documents
+    return graph, dates, rows_parsed, stopword_count, documents, lemmatized_count, lemmatized_total

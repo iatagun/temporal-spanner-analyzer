@@ -109,3 +109,25 @@ export function getSavingsDescription(pct) {
   if (pct > 20) return 'verimli';
   return 'az verimli';
 }
+
+// Log-likelihood (G^2, Dunning 1993) has a classical chi-square (df=1)
+// interpretation -- these are the standard critical values. Returns null
+// (no label) below p<0.05 rather than claiming "not significant" as a
+// fact, since a null result here just means this particular measure
+// didn't clear the bar, not that the pair is meaningless.
+export function significanceLabel(logLikelihood) {
+  if (logLikelihood == null || Number.isNaN(logLikelihood)) return null;
+  if (logLikelihood >= 10.83) return 'p<0.001';
+  if (logLikelihood >= 6.63) return 'p<0.01';
+  if (logLikelihood >= 3.84) return 'p<0.05';
+  return null;
+}
+
+// t-score's conventional collocation-significance cutoff (~1.96, a
+// z-test-style threshold for large samples). NPMI/Dice are similarity
+// coefficients, not hypothesis-test statistics -- they deliberately get
+// no such label anywhere this is used, to avoid a false impression of
+// statistical rigor they don't have.
+export function isTScoreSignificant(tScore) {
+  return typeof tScore === 'number' && !Number.isNaN(tScore) && tScore >= 1.96;
+}
