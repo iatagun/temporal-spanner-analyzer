@@ -40,3 +40,28 @@ export function getCliqueColor(index, isDark = prefersDark()) {
 export function isOverflowClique(index) {
   return index >= CLIQUE_PALETTE.length;
 }
+
+// Chart chrome (axis/grid/node/edge colors) for GraphViewer's cytoscape
+// stylesheet and TrendsView's D3 axes/bars -- both set colors as plain JS
+// hex (cytoscape style objects and D3 .attr() calls can't read `dark:`
+// Tailwind variants), so they used to hardcode their own cool-gray hexes
+// independently of each other and of the page's actual palette. This is
+// the single place those live now, tuned to sit on the warm "paper"
+// surface (globals.css --page-bg) instead of the old flat white/black.
+// Deliberately NOT part of CLIQUE_PALETTE -- these are UI chrome, not
+// CVD-checked categorical data colors.
+export const CHART_CHROME = {
+  node: {
+    fill: { light: '#57524a', dark: '#c9c2b4' },
+    border: { light: '#3a362f', dark: '#8f8775' },
+    label: { light: '#1c1a16', dark: '#f3efe6' },
+  },
+  edge: {
+    line: { light: '#b8b0a0', dark: '#5c5648' },
+    label: { light: '#6b6457', dark: '#a39c8f' },
+  },
+  axis: { light: '#6b6457', dark: '#a39c8f' },
+  // Same values as globals.css's --color-accent / dark-mode override --
+  // kept as a literal pair here since D3 .attr() needs a plain string.
+  barStroke: { light: '#28507e', dark: '#8fb0d8' },
+};

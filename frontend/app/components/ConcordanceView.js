@@ -50,7 +50,7 @@ export default function ConcordanceView({ rawDocuments, words, onClose }) {
             <div>
               {highlightSegments(doc.text, words).map((seg, j) => (
                 seg.hit
-                  ? <strong key={j} className="text-gray-900 dark:text-gray-100 bg-amber-100 dark:bg-amber-900/40 px-0.5 rounded">{seg.text}</strong>
+                  ? <strong key={j} className="text-gray-900 dark:text-gray-100 bg-[var(--color-warning-bg)] px-0.5 rounded">{seg.text}</strong>
                   : <span key={j}>{seg.text}</span>
               ))}
             </div>

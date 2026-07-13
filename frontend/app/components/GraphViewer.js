@@ -2,7 +2,7 @@
 
 import { useRef, useEffect, useMemo } from 'react';
 import dynamic from 'next/dynamic';
-import { prefersDark } from '../lib/palette';
+import { prefersDark, CHART_CHROME } from '../lib/palette';
 
 const CytoscapeComponent = dynamic(
   () => import('react-cytoscapejs'),
@@ -13,32 +13,33 @@ const CytoscapeComponent = dynamic(
 // can't pick up `dark:` automatically -- it reads the same
 // prefers-color-scheme signal palette.js uses for clique colors.
 function buildCyStyles(isDark) {
+  const mode = isDark ? 'dark' : 'light';
   return [
     {
       selector: 'node',
       style: {
-        'background-color': isDark ? '#9ca3af' : '#4b5563',
+        'background-color': CHART_CHROME.node.fill[mode],
         label: 'data(id)',
         'font-size': '11px',
         'text-valign': 'bottom',
         'text-halign': 'center',
-        color: isDark ? '#e5e7eb' : '#111827',
+        color: CHART_CHROME.node.label[mode],
         width: 28,
         height: 28,
         'border-width': 1,
-        'border-color': isDark ? '#6b7280' : '#374151',
+        'border-color': CHART_CHROME.node.border[mode],
       }
     },
     {
       selector: 'edge',
       style: {
         width: 1.5,
-        'line-color': isDark ? '#6b7280' : '#9ca3af',
+        'line-color': CHART_CHROME.edge.line[mode],
         'curve-style': 'bezier',
         label: 'data(label)',
         'font-size': '9px',
         'text-rotation': 'autorotate',
-        color: isDark ? '#9ca3af' : '#6b7280',
+        color: CHART_CHROME.edge.label[mode],
       }
     },
   ];
@@ -78,7 +79,7 @@ export default function GraphViewer({ graph, label, height = 400, colorMap }) {
   const cyRef = useRef(null);
   const isDark = prefersDark();
   const cyStyles = useMemo(() => buildCyStyles(isDark), [isDark]);
-  const borderColor = isDark ? '#9ca3af' : '#1f2937';
+  const borderColor = CHART_CHROME.node.border[isDark ? 'dark' : 'light'];
 
   useEffect(() => {
     if (cyRef.current && colorMap) {

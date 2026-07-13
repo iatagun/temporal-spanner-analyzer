@@ -17,12 +17,15 @@ export default function Header() {
     <header className="mb-8">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-gray-900 dark:bg-gray-100 flex items-center justify-center">
-            <svg className="w-4 h-4 text-white dark:text-gray-900" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
-          </div>
-          <h1 className="text-xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
+          <svg className="w-8 h-8 text-gray-900 dark:text-gray-100 flex-shrink-0" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+            <circle cx="6" cy="9" r="2" fill="currentColor" />
+            <circle cx="6" cy="23" r="2" fill="currentColor" />
+            <circle cx="15" cy="16" r="2" fill="currentColor" />
+            <circle cx="26" cy="16" r="2" fill="currentColor" />
+            <path d="M6 9 L6 23 M6 9 L15 16 M6 23 L15 16 M15 16 L26 16"
+              stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+          </svg>
+          <h1 className="font-serif text-2xl font-medium tracking-tight text-gray-900 dark:text-gray-100">
             Temporal Spanner Analyzer
           </h1>
         </div>

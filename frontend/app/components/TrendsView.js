@@ -3,7 +3,7 @@
 import { useRef, useEffect, useMemo, useState } from 'react';
 import * as d3 from 'd3';
 import { formatTime } from '../lib/utils';
-import { getCliqueColor, prefersDark, CLIQUE_PALETTE } from '../lib/palette';
+import { getCliqueColor, prefersDark, CLIQUE_PALETTE, CHART_CHROME } from '../lib/palette';
 import TruncatedWarning from './TruncatedWarning';
 
 export default function TrendsView({ data, height = 300 }) {
@@ -18,8 +18,9 @@ export default function TrendsView({ data, height = 300 }) {
   useEffect(() => {
     if (!svgRef.current || timelines.length === 0) return;
     const isDark = prefersDark();
-    const axisColor = isDark ? '#9ca3af' : '#6b7280';
-    const barStroke = isDark ? '#60a5fa' : '#1e40af';
+    const mode = isDark ? 'dark' : 'light';
+    const axisColor = CHART_CHROME.axis[mode];
+    const barStroke = CHART_CHROME.barStroke[mode];
 
     const svg = d3.select(svgRef.current);
     svg.selectAll('*').remove();
@@ -58,7 +59,7 @@ export default function TrendsView({ data, height = 300 }) {
   useEffect(() => {
     if (!lineSvgRef.current || timelines.length === 0 || !showLines) return;
     const isDark = prefersDark();
-    const axisColor = isDark ? '#9ca3af' : '#6b7280';
+    const axisColor = CHART_CHROME.axis[isDark ? 'dark' : 'light'];
 
     const svg = d3.select(lineSvgRef.current);
     svg.selectAll('*').remove();
@@ -146,7 +147,7 @@ export default function TrendsView({ data, height = 300 }) {
         </div>
       )}
       <div className="mt-4">
-        <div className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-3">Klik Detayları</div>
+        <div className="font-serif text-base text-gray-900 dark:text-gray-100 mb-3">Klik Detayları</div>
         <div className="flex flex-col gap-1.5">
           {timelines.map((tl, i) => (
             <div key={tl.id} className="border border-gray-200 dark:border-gray-800 rounded-lg p-3 bg-white dark:bg-gray-950 text-sm dark:text-gray-200"

@@ -1,28 +1,61 @@
 @import 'tailwindcss';
 
-/* Chrome/ink roles from the dataviz skill's validated palette
-   (references/palette.md § Chart chrome & ink) -- the same source the
-   clique color palette (lib/palette.js) is drawn from, so page chrome and
-   chart colors read as one system instead of two unrelated choices. */
+/* Academic/journal redesign: a warm "paper" surface instead of flat
+   white/black, a deepened "ink" accent (still the same hue family as
+   CLIQUE_PALETTE's slot 0 in lib/palette.js, just less saturated so it
+   reads as UI chrome rather than a data color), and a single shared
+   warning token set (previously TruncatedWarning/TimeRangeSlider/
+   ConcordanceView each hardcoded their own amber-50/200/700 trio). */
 @theme {
-  --color-accent: #2a78d6;
-  --color-accent-hover: #1c5cab;
-  --color-border: #e5e7eb;
-  --color-bg-alt: #f8fafc;
+  --font-sans: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-serif), ui-serif, Georgia, serif;
+
+  /* Every component in this app builds its light/dark chrome out of
+     Tailwind's `gray-*` scale (border-gray-200, bg-gray-950, text-gray-400,
+     etc. -- dozens of call sites across ~15 files). Overriding the scale
+     itself here re-tints all of them to a warm "paper" neutral for free,
+     instead of hand-editing every className string (and risking missing
+     one). Values are Tailwind's own "stone" ramp -- an already-shipped,
+     already-accessible warm-gray scale, not a hand-tuned guess. */
+  --color-gray-50: #fafaf9;
+  --color-gray-100: #f5f5f4;
+  --color-gray-200: #e7e5e4;
+  --color-gray-300: #d6d3d1;
+  --color-gray-400: #a8a29e;
+  --color-gray-500: #78716c;
+  --color-gray-600: #57534e;
+  --color-gray-700: #44403c;
+  --color-gray-800: #292524;
+  --color-gray-900: #1c1917;
+  --color-gray-950: #0c0a09;
+
+  --color-accent: #28507e;
+  --color-accent-hover: #1c3a5e;
+  --color-border: #e7e5e4;
+  --color-bg-alt: #fafaf9;
   --color-success: #006300;
-  --color-warning: #d97706;
+  --color-warning: #b45309;
+  --color-warning-bg: #fdf3e1;
+  --color-warning-border: #e4c37c;
   --color-danger: #dc2626;
 }
 
 :root {
-  --page-bg: #f9f9f7;
-  --page-fg: #0b0b0b;
+  --page-bg: #faf6ee;
+  --page-fg: #1c1a16;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --page-bg: #0d0d0d;
-    --page-fg: #ffffff;
+    --page-bg: #17140f;
+    --page-fg: #f3efe6;
+    --color-accent: #8fb0d8;
+    --color-accent-hover: #b3cbe6;
+    --color-border: #292524;
+    --color-bg-alt: #1c1917;
+    --color-warning: #e0a94a;
+    --color-warning-bg: #2b2114;
+    --color-warning-border: #5a4526;
   }
 }
 
@@ -32,6 +65,11 @@ body {
   background: var(--page-bg);
   color: var(--page-fg);
   -webkit-font-smoothing: antialiased;
+  /* Faint paper grain -- a single static SVG turbulence layer at ~3%
+     opacity, no animation, no extra network request (inlined as a data
+     URI so it costs nothing beyond a few hundred bytes of CSS). */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+  background-repeat: repeat;
 }
 
 * {
@@ -39,7 +77,7 @@ body {
 }
 
 :focus-visible {
-  outline: 2px solid #2a78d6;
+  outline: 2px solid var(--color-accent);
   outline-offset: 2px;
 }
 

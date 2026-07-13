@@ -54,7 +54,7 @@ export default function TimeRangeSlider({
         </button>
         <button onClick={onLiveToggle}
           className={`px-3 py-1.5 text-xs font-medium rounded-md border transition-colors ${
-            liveMode ? 'bg-amber-50 border-amber-300 text-amber-700 dark:bg-amber-950/40 dark:border-amber-800 dark:text-amber-400' : 'border-gray-200 text-gray-500 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800'
+            liveMode ? 'bg-[var(--color-warning-bg)] border-[var(--color-warning-border)] text-[var(--color-warning)]' : 'border-gray-200 text-gray-500 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800'
           }`}>
           {liveMode ? 'Canlı: Açık' : 'Canlı: Kapalı'}
         </button>

@@ -208,7 +208,7 @@ export default function Home() {
 
           <div className="xl:hidden flex flex-col gap-2 mb-6">
             <details className="border border-gray-200 dark:border-gray-800 rounded-lg p-3 group">
-              <summary className="text-xs font-medium text-gray-600 dark:text-gray-400 cursor-pointer select-none list-none flex items-center justify-between">
+              <summary className="font-serif text-sm text-gray-600 dark:text-gray-400 cursor-pointer select-none list-none flex items-center justify-between">
                 Kuramsal Çerçeve
                 <span className="text-gray-400 group-open:rotate-180 transition-transform">▾</span>
               </summary>
@@ -217,7 +217,7 @@ export default function Home() {
               </div>
             </details>
             <details className="border border-gray-200 dark:border-gray-800 rounded-lg p-3 group">
-              <summary className="text-xs font-medium text-gray-600 dark:text-gray-400 cursor-pointer select-none list-none flex items-center justify-between">
+              <summary className="font-serif text-sm text-gray-600 dark:text-gray-400 cursor-pointer select-none list-none flex items-center justify-between">
                 Kullanım ve Dosya Şablonları
                 <span className="text-gray-400 group-open:rotate-180 transition-transform">▾</span>
               </summary>
@@ -331,7 +331,7 @@ export default function Home() {
           {view === 'compare' && compareData && <CompareResult data={compareData} />}
 
           <footer className="text-xs text-gray-400 dark:text-gray-500 text-center mt-12 pt-5 border-t border-gray-100 dark:border-gray-800">
-            <p>Baligacs (2026) &quot;Temporal Cliques Admit Linear Spanners&quot;</p>
+            <p className="font-serif italic">Baligacs (2026) &quot;Temporal Cliques Admit Linear Spanners&quot;</p>
             <p className="mt-1">Bu araç bağımsız ve ücretsizdir. Beğendiyseniz sağ üstteki butondan bir kahve ısmarlayabilirsiniz.</p>
           </footer>
         </div>

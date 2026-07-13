@@ -214,7 +214,7 @@ export default function ExploreView({ fullGraph, onSample, rawDocuments, pmiThre
                             <span>{wordData.word} &ndash; {m}: {formatScores(scores)}</span>
                             {isMultiWordExpression(scores) && (
                               <span
-                                className="px-1 py-0 rounded bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800"
+                                className="px-1 py-0 rounded bg-[var(--color-warning-bg)] text-[var(--color-warning)] border border-[var(--color-warning-border)]"
                                 title="Bu çift co-occurrence'larının çoğunda birbirine bitişik geçiyor -- sabit bir çok kelimeli birim (örn. bileşik ad) olabilir."
                               >
                                 çok kelimeli birim
@@ -275,8 +275,8 @@ export default function ExploreView({ fullGraph, onSample, rawDocuments, pmiThre
           </div>
           {cliqueError && <div className="p-3 mb-4 border border-red-200 dark:border-red-900 rounded-md bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-400 text-sm animate-in">{cliqueError}</div>}
           {cliqueCheck && (
-            <div className={`p-4 rounded-lg border animate-in ${cliqueCheck.is_clique ? 'border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-900' : 'border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/40'}`}>
-              <div className={`text-sm font-medium mb-1 ${cliqueCheck.is_clique ? 'text-gray-900 dark:text-gray-100' : 'text-amber-800 dark:text-amber-400'}`}>
+            <div className={`p-4 rounded-lg border animate-in ${cliqueCheck.is_clique ? 'border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-900' : 'border-[var(--color-warning-border)] bg-[var(--color-warning-bg)]'}`}>
+              <div className={`text-sm font-medium mb-1 ${cliqueCheck.is_clique ? 'text-gray-900 dark:text-gray-100' : 'text-[var(--color-warning)]'}`}>
                 {cliqueCheck.is_clique ? 'Tam Klik' : 'Tam Klik Değil'}
               </div>
               {cliqueCheck.is_clique && (
@@ -285,7 +285,7 @@ export default function ExploreView({ fullGraph, onSample, rawDocuments, pmiThre
                 </div>
               )}
               {!cliqueCheck.is_clique && cliqueCheck.missing_edges && (
-                <div className="text-xs text-amber-700 dark:text-amber-400 mt-2">
+                <div className="text-xs text-[var(--color-warning)] mt-2">
                   Eksik bağlantılar: {cliqueCheck.missing_edges.map((e, i) => <span key={i}>{e.join(' &mdash; ')}{i < cliqueCheck.missing_edges.length - 1 ? ', ' : ''}</span>)}
                 </div>
               )}
