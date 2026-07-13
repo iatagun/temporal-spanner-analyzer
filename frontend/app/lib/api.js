@@ -90,3 +90,22 @@ export function searchWordCliques(graph, word, windows = 10, opts = {}) {
 export function checkClique(graph, words) {
   return post('/api/check-clique', { graph, words });
 }
+
+export function fetchMweCandidates(rawDocuments, opts = {}) {
+  return post('/api/mwe-candidates', {
+    raw_documents: rawDocuments,
+    max_n: opts.maxN ?? 4,
+    min_freq: opts.minFreq ?? 2,
+    top_n: opts.topN ?? 50,
+  });
+}
+
+export function fetchPairConfidence(rawDocuments, word1, word2, opts = {}) {
+  return post('/api/pair-confidence', {
+    raw_documents: rawDocuments,
+    word1,
+    word2,
+    association_measure: opts.associationMeasure || 'npmi',
+    n_resamples: opts.nResamples ?? 500,
+  });
+}

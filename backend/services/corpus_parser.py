@@ -1,6 +1,7 @@
 from __future__ import annotations
 import re
 import os
+import xml.etree.ElementTree as ET
 from datetime import datetime
 from pathlib import Path
 
@@ -168,6 +169,150 @@ def parse_vrt(
     return rows
 
 
+# TEI POS values only get passed through to _is_content_word as a real
+# tag if they look like Universal POS -- corpora tagged with some other
+# scheme (Penn Treebank "NN", STTS, etc.) would otherwise have every
+# single token silently misclassified as a function word (since
+# _is_content_word treats any non-empty, non-matching pos as "not
+# content"). Falling back to pos="" instead degrades gracefully to the
+# Turkish-stopword heuristic, the same path CSV/JSON already use.
+_KNOWN_UPOS: set[str] = {
+    "NOUN", "PROPN", "VERB", "ADJ", "ADV", "ADP", "AUX", "CCONJ", "DET",
+    "INTJ", "NUM", "PART", "PRON", "PUNCT", "SCONJ", "SYM", "X",
+}
+
+
+def _local_name(tag: str) -> str:
+    # Strips a `{namespace-uri}` prefix ElementTree adds for elements
+    # declared under a default xmlns (TEI files typically declare
+    # xmlns="http://www.tei-c.org/ns/1.0") -- lets tag matching below work
+    # the same whether or not the file bothers with a namespace.
+    return tag.rsplit("}", 1)[-1] if "}" in tag else tag
+
+
+def _tei_date_text(elem: ET.Element) -> str | None:
+    for attr in ("when", "from", "notBefore"):
+        val = elem.get(attr)
+        if val:
+            return val
+    text = (elem.text or "").strip()
+    return text or None
+
+
+def _collect_tei_sentence(s_elem: ET.Element) -> tuple[list[tuple[str, str]], str]:
+    words: list[tuple[str, str]] = []
+    forms: list[str] = []
+    for w in s_elem.iter():
+        if _local_name(w.tag) != "w":
+            continue
+        form = (w.text or "").strip()
+        lemma = w.get("lemma", "").strip() or form
+        pos_raw = w.get("pos", "").strip()
+        pos = pos_raw.upper() if pos_raw.upper() in _KNOWN_UPOS else ""
+        if lemma:
+            words.append((lemma, pos))
+        if form:
+            forms.append(form)
+    return words, " ".join(forms)
+
+
+def _walk_tei_word_level(
+    elem: ET.Element,
+    current_date: str,
+    filename: str,
+    rows: list[tuple[str, list[tuple[str, str]], str, list[tuple[str, str, str]]]],
+) -> str:
+    # Returns the (possibly updated) current_date so the CALLER's loop can
+    # carry it forward to later siblings -- current_date is a plain str
+    # (immutable), so a `current_date = new_date` reassignment inside a
+    # recursive call is local to that call frame and would otherwise be
+    # silently lost the moment that call returns (e.g. a <date> in
+    # <teiHeader> would never reach the later <text> sibling).
+    tag = _local_name(elem.tag)
+    if tag == "date":
+        new_date = _tei_date_text(elem)
+        if new_date:
+            current_date = new_date
+    if tag == "s":
+        words, text = _collect_tei_sentence(elem)
+        if words:
+            rows.append((current_date, words, text, []))
+        return current_date  # <w> elements already consumed via .iter() above
+    for child in elem:
+        current_date = _walk_tei_word_level(child, current_date, filename, rows)
+    return current_date
+
+
+def parse_tei(
+    content: str, filename: str = ""
+) -> list[tuple[str, list[tuple[str, str]], str, list[tuple[str, str, str]]]]:
+    """Best-effort TEI/XML support -- real TEI corpora vary hugely (from
+    word-level linguistically annotated `<w lemma="..." pos="...">` to
+    plain untokenized prose in `<p>`), so this covers two common cases and
+    documents what it does NOT cover: bespoke TEI customizations, complex
+    apparatus criticus, or word-level annotation via a scheme other than
+    `@lemma`/`@pos` attributes on `<w>` (e.g. `@ana` pointing to a separate
+    feature-structure library) are NOT supported.
+
+    - Word-level mode (used when the file has any `<w>` element at all):
+      each `<s>` (sentence) becomes one document, same fine-grained
+      granularity as CoNLL-U. `deps` is always empty -- TEI's dependency
+      annotation (if any) isn't standardized enough to support generically.
+    - Plain-text fallback (no `<w>` at all): each `<p>` (or the whole
+      `<body>` if there's no `<p>`) becomes one document of whitespace-
+      split tokens with pos="" -- same coarse granularity, and the same
+      Turkish-stopword content-word fallback, as CSV/JSON.
+    - Date: the nearest enclosing `<date>` element's `@when`/`@from`/
+      `@notBefore` attribute or text content, walked top-down so a
+      `<date>` in an outer `<div>` applies to sentences/paragraphs
+      nested inside it unless overridden by a closer one. Falls back to
+      _detect_date_from_filename if no `<date>` is found anywhere.
+    """
+    try:
+        root = ET.fromstring(content)
+    except ET.ParseError as e:
+        raise ValueError(f"Could not parse XML: {e}")
+
+    base_date = _detect_date_from_filename(filename) or ""
+    has_words = any(_local_name(el.tag) == "w" for el in root.iter())
+
+    rows: list[tuple[str, list[tuple[str, str]], str, list[tuple[str, str, str]]]] = []
+
+    if has_words:
+        _walk_tei_word_level(root, base_date, filename, rows)
+        return rows
+
+    # Plain-text fallback: one document per <p>, or the whole <body>/root
+    # if there are no <p> elements at all. Date: the first <date> found
+    # ANYWHERE in the document (most commonly the header's publication
+    # date) applies to every block -- a per-paragraph nearest-ancestor
+    # lookup would need real parent-tracking (ElementTree has no parent
+    # pointers) for a case (a whole TEI file per differently-dated
+    # paragraph) that's unusual for what's normally one dated document
+    # per file, matching CSV/JSON's equally simple one-date-per-row model.
+    current_date = base_date
+    for date_el in root.iter():
+        if _local_name(date_el.tag) == "date":
+            found_date = _tei_date_text(date_el)
+            if found_date:
+                current_date = found_date
+            break
+
+    paragraphs = [el for el in root.iter() if _local_name(el.tag) == "p"]
+    blocks = paragraphs if paragraphs else [root]
+
+    for block in blocks:
+        text = " ".join("".join(block.itertext()).split())
+        if not text:
+            continue
+        tokens = re.split(r"\s+", text.strip())
+        words = [(t, "") for t in tokens if t]
+        if words:
+            rows.append((current_date, words, text, []))
+
+    return rows
+
+
 def detect_and_parse(
     content: str, filename: str = ""
 ) -> tuple[list[tuple[str, list[tuple[str, str]], str, list[tuple[str, str, str]]]], str, dict]:
@@ -185,6 +330,9 @@ def detect_and_parse(
     elif ext == ".vrt":
         metadata["format"] = "vrt"
         rows = parse_vrt(content, filename)
+    elif ext in (".xml", ".tei"):
+        metadata["format"] = "tei"
+        rows = parse_tei(content, filename)
     else:
         return [], "unsupported", metadata
 

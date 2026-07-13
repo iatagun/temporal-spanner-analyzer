@@ -1,4 +1,6 @@
-from backend.services.corpus_parser import parse_conllu, parse_vrt
+import pytest
+
+from backend.services.corpus_parser import parse_conllu, parse_vrt, parse_tei
 
 
 def test_parse_conllu_keeps_upos_alongside_lemma():
@@ -121,3 +123,79 @@ def test_parse_vrt_falls_back_to_word_only_without_extra_columns():
     assert words == [("elma", ""), ("armut", "")]
     assert text == "elma armut"
     assert deps == []
+
+
+def test_parse_tei_word_level_with_namespace():
+    # Namespace-aware: TEI files typically declare
+    # xmlns="http://www.tei-c.org/ns/1.0", which ElementTree prefixes
+    # every tag with -- _local_name() must strip that so <w>/<s>/<date>
+    # matching still works.
+    content = """<?xml version="1.0"?>
+<TEI xmlns="http://www.tei-c.org/ns/1.0">
+  <teiHeader><fileDesc><sourceDesc><bibl><date when="2020-01-15"/></bibl></sourceDesc></fileDesc></teiHeader>
+  <text><body><div>
+    <s><w lemma="yapay" pos="ADJ">yapay</w><w lemma="zeka" pos="NOUN">zeka</w></s>
+    <s><w lemma="derin" pos="ADJ">derin</w><w lemma="ogrenme" pos="NOUN">ogrenme</w></s>
+  </div></body></text>
+</TEI>"""
+    rows = parse_tei(content, filename="test.xml")
+    assert len(rows) == 2
+    date0, words0, text0, deps0 = rows[0]
+    # Regression test: a <date> in <teiHeader> (a sibling that comes
+    # BEFORE <text>, not an ancestor of the <s> elements) must still
+    # reach every sentence -- the recursive walker threads current_date
+    # through return values precisely so an update in one subtree isn't
+    # silently lost once that recursive call returns.
+    assert date0 == "2020-01-15"
+    assert words0 == [("yapay", "ADJ"), ("zeka", "NOUN")]
+    assert text0 == "yapay zeka"
+    assert deps0 == []
+    assert rows[1][0] == "2020-01-15"
+
+
+def test_parse_tei_word_level_without_namespace():
+    content = """<TEI>
+  <teiHeader><date when="2022-03-01"/></teiHeader>
+  <text><body><s><w lemma="test" pos="NOUN">test</w></s></body></text>
+</TEI>"""
+    rows = parse_tei(content, filename="test.xml")
+    assert len(rows) == 1
+    assert rows[0][0] == "2022-03-01"
+    assert rows[0][1] == [("test", "NOUN")]
+
+
+def test_parse_tei_falls_back_to_plain_text_without_w_elements():
+    content = """<TEI>
+  <teiHeader><date when="2021-06-01"/></teiHeader>
+  <text><body>
+    <p>yapay zeka ve derin ogrenme konusu</p>
+    <p>baska bir paragraf metni burada</p>
+  </body></text>
+</TEI>"""
+    rows = parse_tei(content, filename="test.xml")
+    assert len(rows) == 2
+    for date, words, text, deps in rows:
+        assert date == "2021-06-01"  # header date applies to every paragraph
+        assert deps == []
+        assert all(pos == "" for _word, pos in words)  # no POS at all in plain-text mode
+    assert rows[0][2] == "yapay zeka ve derin ogrenme konusu"
+
+
+def test_parse_tei_unknown_pos_scheme_falls_back_to_empty_pos():
+    # A POS tagset other than Universal POS (e.g. Penn Treebank "NN") must
+    # NOT be passed through as if it were UPOS -- _is_content_word would
+    # then misclassify every single token as a function word. Falling
+    # back to pos="" instead degrades to the Turkish-stopword heuristic.
+    content = """<TEI>
+  <text><body><s><w lemma="ev" pos="NN">ev</w></s></body></text>
+</TEI>"""
+    rows = parse_tei(content, filename="test.xml")
+    assert rows[0][1] == [("ev", "")]
+
+
+def test_parse_tei_rejects_malformed_xml():
+    try:
+        parse_tei("<TEI><unclosed>", filename="bad.xml")
+        assert False, "expected ValueError for malformed XML"
+    except ValueError:
+        pass

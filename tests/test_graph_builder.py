@@ -6,6 +6,8 @@ from backend.services.graph_builder import (
     parse_json,
     compute_npmi,
     compute_association_measures,
+    extract_mwe_candidates,
+    bootstrap_confidence_interval,
     _is_content_word,
 )
 
@@ -213,6 +215,10 @@ def test_compute_association_measures_matches_hand_computed_values():
     assert pair_scores["dice"] == pytest.approx(4 / 7, abs=1e-6)
     assert pair_scores["t_score"] == pytest.approx(0.23570, abs=1e-4)
     assert pair_scores["log_likelihood"] == pytest.approx(0.90805, abs=1e-4)
+    # p_value: G^2's chi-square (df=1) survival function has a closed form,
+    # erfc(sqrt(G^2/2)) -- 0.90805 -> 0.34063 (cross-checked against
+    # math.erfc directly, not just re-deriving the same formula here).
+    assert pair_scores["p_value"] == pytest.approx(0.34063, abs=1e-4)
 
 
 def test_compute_association_measures_respects_min_codf_for_every_measure():
@@ -222,7 +228,10 @@ def test_compute_association_measures_respects_min_codf_for_every_measure():
     rows = [["a", "b"], ["a", "b"], ["c", "d"], ["c", "d"], ["a", "b"], ["c", "d"], ["e", "f"]]
     scores, _truncated = compute_association_measures(rows)
     assert ("e", "f") not in scores
-    assert set(scores[("a", "b")].keys()) == {"npmi", "log_likelihood", "dice", "t_score", "adjacency_ratio"}
+    assert set(scores[("a", "b")].keys()) == {
+        "npmi", "log_likelihood", "dice", "t_score", "adjacency_ratio",
+        "p_value", "p_value_fdr", "p_value_bonferroni",
+    }
 
 
 def test_compute_association_measures_adjacency_ratio_detects_mwe_candidates():
@@ -238,6 +247,61 @@ def test_compute_association_measures_adjacency_ratio_detects_mwe_candidates():
     scores, _truncated = compute_association_measures(rows, min_codf=2)
     assert scores[("yapay", "zeka")]["adjacency_ratio"] == pytest.approx(1.0)
     assert scores[("veri", "zeka")]["adjacency_ratio"] == pytest.approx(0.0)
+
+
+def test_compute_association_measures_fdr_never_more_conservative_than_bonferroni():
+    # Benjamini-Hochberg FDR is, by construction, always <= Bonferroni for
+    # the same pair (less conservative) -- and both must be monotonic when
+    # pairs are sorted by their raw p-value ascending (BH's defining
+    # property: q(i) <= q(i+1)). A corpus with several pairs of varying
+    # strength (strong/weak/noisy) gives enough spread in p-values to
+    # meaningfully exercise both properties, not just a single pair.
+    rows = [
+        ["a", "b"], ["a", "b"], ["a", "b"], ["a", "b"],
+        ["c", "d"], ["c", "d"],
+        ["e", "f"], ["f", "g"], ["e", "g"], ["e", "f"], ["f", "g"],
+    ]
+    scores, _truncated = compute_association_measures(rows, min_codf=2)
+    assert len(scores) >= 2
+
+    for pair_scores in scores.values():
+        assert pair_scores["p_value_fdr"] <= pair_scores["p_value_bonferroni"] + 1e-9
+
+    ordered = sorted(scores.values(), key=lambda s: s["p_value"])
+    fdr_values = [s["p_value_fdr"] for s in ordered]
+    assert fdr_values == sorted(fdr_values)
+
+
+def test_extract_mwe_candidates_penalizes_nested_bigram():
+    # "yapay zeka modeli" (3 times) always contains "yapay zeka" (+2 more
+    # standalone occurrences = freq 5) and "zeka modeli" (which NEVER
+    # occurs on its own, freq 3 == its only longer container's freq).
+    # C-value: trigram log2(3)*3=4.755; bigram "yapay zeka"
+    # log2(2)*(5-3/1)=2.0; bigram "zeka modeli" log2(2)*(3-3/1)=0.0 --
+    # entirely "explained away" by always riding along inside the trigram.
+    word_rows = [
+        ["yapay", "zeka", "modeli"],
+        ["yapay", "zeka", "modeli"],
+        ["yapay", "zeka", "modeli"],
+        ["yapay", "zeka"],
+        ["yapay", "zeka"],
+    ]
+    results = extract_mwe_candidates(word_rows, max_n=3, min_freq=2)
+    by_text = {r["text"]: r for r in results}
+
+    assert by_text["yapay zeka modeli"]["c_value"] == pytest.approx(4.75489, abs=1e-4)
+    assert by_text["yapay zeka"]["c_value"] == pytest.approx(2.0, abs=1e-6)
+    assert by_text["zeka modeli"]["c_value"] == pytest.approx(0.0, abs=1e-6)
+    # Ranked descending by C-value -- the trigram is the strongest term.
+    assert [r["text"] for r in results][0] == "yapay zeka modeli"
+
+
+def test_extract_mwe_candidates_respects_min_freq():
+    # A candidate seen only once must be dropped entirely, same rationale
+    # as min_codf elsewhere in this module.
+    word_rows = [["nadir", "ifade"], ["baska", "seyler", "burada"]]
+    results = extract_mwe_candidates(word_rows, max_n=2, min_freq=2)
+    assert results == []
 
 
 def test_compute_association_measures_budget_truncates_and_reports_it():
@@ -257,3 +321,61 @@ def test_compute_npmi_is_a_thin_view_over_association_measures():
     npmi_only = compute_npmi(rows)
     full, _truncated = compute_association_measures(rows)
     assert npmi_only[("x", "y")] == full[("x", "y")]["npmi"]
+
+
+def test_bootstrap_confidence_interval_contains_point_estimate():
+    # A basic sanity property any confidence interval must satisfy: the
+    # point estimate (computed on the full, unresampled data) always
+    # falls within its own bootstrap interval.
+    word_rows = (
+        [["yapay", "zeka", "x1"], ["yapay", "zeka", "x2"]] * 20
+        + [["yapay", "other"], ["zeka", "other2"]] * 10
+    )
+    lower, upper, point = bootstrap_confidence_interval(
+        word_rows, "yapay", "zeka", measure="npmi", n_resamples=200, seed=1
+    )
+    assert lower <= point + 1e-9
+    assert point <= upper + 1e-9
+
+
+def test_bootstrap_confidence_interval_perfectly_correlated_pair_is_degenerate():
+    # A pair that co-occurs in EVERY document, with no other documents at
+    # all, has zero resampling variance -- every possible resample still
+    # contains only this pair, so the interval collapses to a single point.
+    word_rows = [["a", "b"]] * 30
+    lower, upper, point = bootstrap_confidence_interval(
+        word_rows, "a", "b", measure="npmi", n_resamples=200, seed=7
+    )
+    assert lower == pytest.approx(1.0)
+    assert upper == pytest.approx(1.0)
+    assert point == pytest.approx(1.0)
+
+
+def test_bootstrap_confidence_interval_stabilizes_with_more_resamples():
+    # More resamples should converge toward a similar interval, not swing
+    # wildly -- a weak signal that the estimator is behaving, not just
+    # returning noise.
+    word_rows = (
+        [["a", "b", "x1"], ["a", "b", "x2"]] * 15
+        + [["a", "y1"], ["b", "y2"], ["z1", "z2"]] * 15
+    )
+    lower_small, upper_small, _ = bootstrap_confidence_interval(
+        word_rows, "a", "b", measure="npmi", n_resamples=100, seed=3
+    )
+    lower_large, upper_large, _ = bootstrap_confidence_interval(
+        word_rows, "a", "b", measure="npmi", n_resamples=1000, seed=3
+    )
+    assert abs(lower_small - lower_large) < 0.3
+    assert abs(upper_small - upper_large) < 0.3
+
+
+def test_bootstrap_confidence_interval_handles_zero_cooccurrence_resamples_gracefully():
+    # A rare pair (codf=2, right at min_codf) can easily have resamples
+    # where it doesn't co-occur at all, or doesn't appear at all -- must
+    # not raise (division by zero, log(0), etc.), for every measure.
+    word_rows = [["a", "b"], ["a", "b"]] + [["c", "d", "e"]] * 20
+    for measure in ("npmi", "log_likelihood", "dice", "t_score"):
+        lower, upper, point = bootstrap_confidence_interval(
+            word_rows, "a", "b", measure=measure, n_resamples=200, seed=5
+        )
+        assert lower <= upper + 1e-9

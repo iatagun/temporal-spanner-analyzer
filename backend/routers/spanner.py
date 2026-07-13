@@ -79,12 +79,13 @@ def upload_csv(
 
     is_json = ext.endswith(".json")
     is_csv = ext.endswith(".csv")
-    is_corpus = ext.endswith(".conllu") or ext.endswith(".conll") or ext.endswith(".vrt")
+    is_corpus = ext.endswith((".conllu", ".conll", ".vrt", ".xml", ".tei"))
 
     if not is_csv and not is_json and not is_corpus:
         raise HTTPException(
             400,
-            "Only CSV, JSON, CoNLL-U (.conllu/.conll), and VRT (.vrt) files are supported",
+            "Only CSV, JSON, CoNLL-U (.conllu/.conll), VRT (.vrt), and TEI/XML "
+            "(.xml/.tei) files are supported",
         )
 
     # Syntactic (dependency-based) collocation needs HEAD/DEPREL, which
@@ -109,7 +110,8 @@ def upload_csv(
                 raise ValueError(
                     f"No valid rows found in {fmt} file. "
                     "CoNLL-U: tab-separated columns with word/lemma in column 2/3. "
-                    "VRT: <text> tags with tab-separated word lines."
+                    "VRT: <text> tags with tab-separated word lines. "
+                    "TEI/XML: <w> elements (word-level) or <p> elements (plain text)."
                 )
             graph, dates, rows_parsed, stopwords_filtered, documents = parse_corpus_rows(
                 rows, pmi_threshold=pmi_threshold, measure=association_measure,

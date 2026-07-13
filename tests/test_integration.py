@@ -1,3 +1,4 @@
+import pytest
 from fastapi.testclient import TestClient
 import sys; sys.path.insert(0, "backend")
 from backend.main import app
@@ -101,7 +102,10 @@ def test_upload_association_measure_changes_gating_and_edges_carry_all_scores():
     assert len(ll_edges) == 2
     pairs = {(e["u"], e["v"]) if e["u"] <= e["v"] else (e["v"], e["u"]) for e in ll_edges}
     assert pairs == {("kedi", "kopek")}
-    assert set(ll_edges[0]["scores"].keys()) == {"npmi", "log_likelihood", "dice", "t_score", "adjacency_ratio"}
+    assert set(ll_edges[0]["scores"].keys()) == {
+        "npmi", "log_likelihood", "dice", "t_score", "adjacency_ratio",
+        "p_value", "p_value_fdr", "p_value_bonferroni",
+    }
     assert ll_edges[0]["scores"]["log_likelihood"] > 5.0
     assert ll_edges[1]["scores"] == {}
     assert r_ll.json()["association_measure"] == "log_likelihood"
@@ -178,6 +182,69 @@ def test_upload_lemmatize_reports_partial_coverage_for_unanalyzable_words():
     assert "xyzqwerty" in d["graph"]["vertices"]  # left as-is, still usable
 
 
+def test_mwe_candidates_ranks_nested_terms_correctly():
+    # Uses upload's raw_documents directly (like word-cliques does) to rank
+    # multi-word-expression candidates by C-value -- see
+    # graph_builder.extract_mwe_candidates for the hand-verified formula.
+    csv_content = (
+        b"date,words\n"
+        b"2020-01-05,\"yapay,zeka,modeli\"\n"
+        b"2020-02-01,\"yapay,zeka,modeli\"\n"
+        b"2020-03-01,\"yapay,zeka,modeli\"\n"
+        b"2020-04-01,\"yapay,zeka\"\n"
+        b"2020-05-01,\"yapay,zeka\"\n"
+    )
+    r_upload = client.post("/api/upload", files={"file": ("test.csv", csv_content, "text/csv")})
+    assert r_upload.status_code == 200
+    raw_documents = r_upload.json()["raw_documents"]
+
+    r = client.post("/api/mwe-candidates", json={"raw_documents": raw_documents, "max_n": 3, "min_freq": 2})
+    assert r.status_code == 200
+    candidates = r.json()["candidates"]
+    texts = [c["text"] for c in candidates]
+    assert "yapay zeka modeli" in texts
+    # Ranked descending by C-value -- the un-diluted trigram wins.
+    assert texts[0] == "yapay zeka modeli"
+
+
+def test_mwe_candidates_requires_raw_documents():
+    r = client.post("/api/mwe-candidates", json={"raw_documents": []})
+    assert r.status_code == 400
+
+
+def test_pair_confidence_uses_upload_raw_documents():
+    # Uses upload's raw_documents directly (same "raw_documents, not
+    # graph" pattern as mwe-candidates/word-cliques). A pair that
+    # co-occurs in every document has zero resampling variance, so its
+    # interval collapses to a single point -- a strong, easily-checked
+    # end-to-end signal that the real endpoint (not just the unit-tested
+    # function) is wired correctly.
+    csv_content = b"date,words\n2020-01-05,\"yapay,zeka\"\n2020-02-01,\"yapay,zeka\"\n2020-03-01,\"yapay,zeka\"\n"
+    r_upload = client.post("/api/upload", files={"file": ("test.csv", csv_content, "text/csv")})
+    assert r_upload.status_code == 200
+    raw_documents = r_upload.json()["raw_documents"]
+
+    r = client.post("/api/pair-confidence", json={
+        "raw_documents": raw_documents, "word1": "yapay", "word2": "zeka", "n_resamples": 100,
+    })
+    assert r.status_code == 200
+    d = r.json()
+    assert d["lower"] == pytest.approx(1.0)
+    assert d["upper"] == pytest.approx(1.0)
+    assert d["point_estimate"] == pytest.approx(1.0)
+
+
+def test_pair_confidence_requires_raw_documents_and_words():
+    r_no_docs = client.post("/api/pair-confidence", json={"raw_documents": [], "word1": "a", "word2": "b"})
+    assert r_no_docs.status_code == 400
+
+    r_no_word = client.post("/api/pair-confidence", json={
+        "raw_documents": [{"label": 0.0, "words": ["a", "b"], "text": "a b"}],
+        "word1": "", "word2": "b",
+    })
+    assert r_no_word.status_code == 400
+
+
 def test_upload_conllu_syntactic_collocation_excludes_sibling_pairs():
     # "buyuk"/"iyi" are both amod children of "ev" (siblings, not directly
     # connected) -- collocation_mode=syntactic must exclude that pair,
@@ -236,6 +303,46 @@ def test_upload_rejects_syntactic_collocation_for_non_conllu():
         "/api/upload",
         files={"file": ("test.csv", csv_content, "text/csv")},
         data={"collocation_mode": "syntactic"},
+    )
+    assert r.status_code == 400
+
+
+def test_upload_tei_word_level_success():
+    xml_content = (
+        b'<?xml version="1.0"?>\n'
+        b'<TEI xmlns="http://www.tei-c.org/ns/1.0">\n'
+        b'<teiHeader><date when="2020-01-15"/></teiHeader>\n'
+        b'<text><body><div>\n'
+        b'<s><w lemma="yapay" pos="ADJ">yapay</w><w lemma="zeka" pos="NOUN">zeka</w></s>\n'
+        b'<s><w lemma="yapay" pos="ADJ">yapay</w><w lemma="zeka" pos="NOUN">zeka</w></s>\n'
+        b'</div></body></text>\n'
+        b'</TEI>\n'
+    )
+    r = client.post("/api/upload", files={"file": ("test.xml", xml_content, "application/xml")})
+    assert r.status_code == 200
+    d = r.json()
+    assert "yapay" in d["graph"]["vertices"]
+    assert "zeka" in d["graph"]["vertices"]
+
+
+def test_upload_tei_plain_text_fallback_success():
+    xml_content = (
+        b'<TEI><teiHeader><date when="2021-06-01"/></teiHeader>\n'
+        b'<text><body>\n'
+        b'<p>yapay zeka konusu burada anlatiliyor bugun</p>\n'
+        b'<p>yapay zeka tekrar burada gecen konu bugun</p>\n'
+        b'</body></text></TEI>\n'
+    )
+    r = client.post("/api/upload", files={"file": ("test.xml", xml_content, "application/xml")})
+    assert r.status_code == 200
+    d = r.json()
+    assert "yapay" in d["graph"]["vertices"]
+
+
+def test_upload_rejects_malformed_xml_with_400_not_500():
+    r = client.post(
+        "/api/upload",
+        files={"file": ("bad.xml", b"<TEI><unclosed>", "application/xml")},
     )
     assert r.status_code == 400
 

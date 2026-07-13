@@ -4,6 +4,7 @@ from typing import List, Optional
 
 from backend.models import GraphSchema, BaseModel, RawDocumentSchema, AssociationMeasure
 from backend.services.trend_analyzer import compute_trends
+from backend.services.graph_builder import extract_mwe_candidates, bootstrap_confidence_interval
 
 
 class WordCliqueRequest(BaseModel):
@@ -35,6 +36,38 @@ class WordCliqueResponse(BaseModel):
     cliques: List[WordCliqueItemResponse]
     total_snapshots: int
     truncated: bool = False
+
+
+class MWECandidateRequest(BaseModel):
+    raw_documents: List[RawDocumentSchema]
+    max_n: int = Field(4, ge=2, le=8)
+    min_freq: int = Field(2, ge=1, le=1000)
+    top_n: int = Field(50, ge=1, le=500)
+
+
+class MWECandidateItem(BaseModel):
+    ngram: List[str]
+    text: str
+    frequency: int
+    c_value: float
+
+
+class MWECandidateResponse(BaseModel):
+    candidates: List[MWECandidateItem]
+
+
+class PairConfidenceRequest(BaseModel):
+    raw_documents: List[RawDocumentSchema]
+    word1: str
+    word2: str
+    association_measure: AssociationMeasure = "npmi"
+    n_resamples: int = Field(500, ge=50, le=2000)
+
+
+class PairConfidenceResponse(BaseModel):
+    lower: float
+    upper: float
+    point_estimate: float
 
 
 class CheckCliqueRequest(BaseModel):
@@ -95,6 +128,37 @@ def word_cliques(req: WordCliqueRequest):
         total_snapshots=total_snapshots,
         truncated=trend.truncated,
     )
+
+
+@router.post("/mwe-candidates", response_model=MWECandidateResponse)
+def mwe_candidates(req: MWECandidateRequest):
+    # Needs the raw per-document word lists (not graph.edges, which only
+    # carries pairs) to build contiguous n-grams -- same "raw_documents,
+    # not graph" pattern as trend_analyzer's windowed recompute.
+    if not req.raw_documents:
+        raise HTTPException(400, "raw_documents is required")
+    word_rows = [d.words for d in req.raw_documents]
+    candidates = extract_mwe_candidates(
+        word_rows, max_n=req.max_n, min_freq=req.min_freq, top_n=req.top_n
+    )
+    return MWECandidateResponse(candidates=[MWECandidateItem(**c) for c in candidates])
+
+
+@router.post("/pair-confidence", response_model=PairConfidenceResponse)
+def pair_confidence(req: PairConfidenceRequest):
+    # Opt-in, single-pair, on-demand -- see
+    # graph_builder.bootstrap_confidence_interval's docstring for why this
+    # is never computed automatically for every pair in a corpus.
+    if not req.raw_documents:
+        raise HTTPException(400, "raw_documents is required")
+    if not req.word1 or not req.word2:
+        raise HTTPException(400, "word1 and word2 are required")
+    word_rows = [d.words for d in req.raw_documents]
+    lower, upper, point = bootstrap_confidence_interval(
+        word_rows, req.word1, req.word2,
+        measure=req.association_measure, n_resamples=req.n_resamples,
+    )
+    return PairConfidenceResponse(lower=lower, upper=upper, point_estimate=point)
 
 
 @router.post("/check-clique", response_model=CheckCliqueResponse)

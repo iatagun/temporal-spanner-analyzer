@@ -3,7 +3,7 @@
 Derlem dilbilimcileri için zamansal kavram evrimi analiz aracı.
 Baligács (2026) "Temporal Cliques Admit Linear Spanners" implementasyonu.
 
-CSV / JSON / CoNLL-U / VRT → NPMI çizgesi → maksimal klikler → lineer spanner (≤ 7n) → trendler / karşılaştırma / keşif.
+CSV / JSON / CoNLL-U / VRT / TEI-XML → NPMI çizgesi → maksimal klikler → lineer spanner (≤ 7n) → trendler / karşılaştırma / keşif.
 
 ## Canlı
 
@@ -23,7 +23,7 @@ cd frontend && npm run dev    # http://localhost:3004
 ## Test
 
 ```bash
-python -m pytest tests/ -v                      # 111 test
+python -m pytest tests/ -v                      # 130 test
 python -m pytest tests/ -v -k test_upload       # spesifik test
 
 cd frontend && npx playwright test              # e2e smoke testleri (backend+frontend'i kendi başlatır)
@@ -62,8 +62,8 @@ backend/
     graph_utils.py      Bron–Kerbosch (Tomita pivot + bütçe + budama)
     spanner_service.py  Pipeline orkestratörü (doğrulama opsiyonel)
     trend_analyzer.py   Zaman pencereli klik evrimi (bisect + Jaccard)
-    corpus_parser.py    CoNLL-U / VRT format ayrıştırıcı (+ HEAD/DEPREL,
-                        ham cümle metni)
+    corpus_parser.py    CoNLL-U / VRT / TEI-XML format ayrıştırıcı
+                        (+ HEAD/DEPREL, ham cümle metni)
     lemmatizer.py       Tembel yüklenen Zeyrek/TRmorph Türkçe kök indirgeyici
   algorithm/            Baligács (2026) Lemma/Theorem implementasyonu
     temporal_graph.py   Nmin, Nmax, pos, BFS, induced subgraph
@@ -170,6 +170,61 @@ spanner/                Saf Python algoritma kütüphanesi
   bu sayımı taşır; frontend "%X kelime köklendirildi" göstererek
   kullanıcının köklemeye ne kadar güvenebileceğini görmesini sağlar
   (`lemmatize=False` iken ikisi de 0).
+- **Çoklu karşılaştırma düzeltmesi (Bonferroni/FDR).** Binlerce çift aynı
+  anda test edilirken log-likelihood'un ki-kare kritik değerleriyle
+  (3.84/6.63/10.83) "anlamlı" demek düzeltmesiz çoklu-test sorunu yaratır.
+  `compute_association_measures` her çift için `p_value` (G²'nin serbestlik
+  derecesi-1 ki-kare sağkalım fonksiyonu, kapalı form: `erfc(sqrt(G²/2))`
+  — `math.erfc`, scipy YOK) hesaplar; tüm çiftler hesaplandıktan sonra
+  `p_value_bonferroni` (`min(1, p*n)`) ve Benjamini-Hochberg `p_value_fdr`
+  (q-değeri) eklenir. `n` = o hesaplamadaki test edilen çift sayısı (küresel
+  çağrıda tüm korpus, pencereli çağrıda o pencere). Kapı/eşik davranışı
+  DEĞİŞMEDİ — `association_measure=log_likelihood` hâlâ ham G² ile kapılanır;
+  düzeltilmiş p-değerleri `adjacency_ratio` gibi salt bilgi amaçlı,
+  ExploreView'da "(p<0.05, FDR: anlamlı/anlamlı değil)" olarak gösterilir.
+- **MWE tespiti C-value ile derinleştirildi.** `adjacency_ratio` (yukarıda)
+  sadece iki-kelimelik, "bitişik mi" ikili sinyaliydi.
+  `graph_builder.extract_mwe_candidates` (Frantzi & Ananiadou 1996)
+  2-4 kelimelik ardışık n-gram adaylarını C-value'ya göre sıralar — İÇ İÇE
+  geçen adayları cezalandırır ("yapay zeka" hep daha uzun "yapay zeka
+  modeli" içinde geçiyorsa düşük puan alır, kendi başına bağımsız bir birim
+  olmadığının kanıtı). Yeni `/api/mwe-candidates` uç noktası
+  `raw_documents` alır (upload anındaki `graph.edges` sadece ikili çiftlerle
+  sınırlı, n-gram'lar için ham dokümanlara ihtiyaç var — `word-cliques` ile
+  aynı desen). ExploreView'da ayrı bir "MWE Adayları" sekmesi; mevcut
+  `adjacency_ratio` rozeti dokunulmadan kaldı (hafif, her-zaman-açık sinyal).
+- **TEI/XML korpus format desteği eklendi** (`.xml`/`.tei`). Gerçek TEI
+  dosyaları çok çeşitli olduğu için sadece iki yaygın alt-küme desteklenir:
+  kelime-seviyeli (`<w lemma="..." pos="...">`, `<s>` cümle sınırlarıyla,
+  CoNLL-U ile aynı ince tane) ve düz-metin (`<w>` yoksa her `<p>` — veya
+  hiç yoksa tüm gövde — CSV/JSON gibi Türkçe stopword listesine düşen kaba
+  tane). `xml.etree.ElementTree` (stdlib, yeni bağımlılık yok), ad alanı
+  (namespace) farkında (`_local_name` ile `{...}` öneki soyulur). `@pos`
+  sadece bilinen bir UPOS etiketiyse (`NOUN/VERB/...`) kullanılır — başka
+  bir etiketleme şemasıysa (Penn Treebank `NN` gibi) her token'ı yanlışlıkla
+  işlev-kelimesi sayıp elemek yerine `pos=""`'a (stopword geri düşüşü)
+  düşülür. Tarih: en yakın `<date>` elementinin `@when`/`@from`/`@notBefore`
+  değeri; kelime-seviyeli modda ağaçta yukarıdan aşağı taşınır (bir alt
+  ağaçtaki güncelleme geri dönüş değeri ÜZERİNDEN üst çağrıya iletilir —
+  düz bir string parametresi üzerinden DEĞİL, aksi halde `teiHeader`'daki
+  bir tarih hiçbir zaman `<text>` kardeşine ulaşmazdı, gerçek bir hata
+  olarak yakalandı). DesteklenMEyenler açıkça belirtildi: özel TEI
+  şemaları, `@ana` gibi ayrı bir öznitelik-yapısı kütüphanesine işaret eden
+  kelime-seviyeli etiketleme, apparatus criticus.
+- **Güven aralıkları (bootstrap) — isteğe bağlı, tek çift için.** Binlerce
+  çift için otomatik hesaplanırsa Faz A'nın `/api/trends` performans
+  kazanımını geri alır diye BİLEREK opt-in tasarlandı:
+  `graph_builder.bootstrap_confidence_interval(word_rows, w1, w2, measure,
+  n_resamples=500)` dokümanları yerine koyarak yeniden örnekler, her
+  örneklemde sadece O İKİ KELİME için ilgili ölçütü (npmi/log_likelihood/
+  dice/t_score — `_bootstrap_pair_score`, `compute_association_measures`'ın
+  formülleriyle aynı) yeniden hesaplar, %2.5/%97.5 persentillerini döndürür.
+  Yeni `/api/pair-confidence` uç noktası `raw_documents` + `word1`/`word2`
+  alır (`word-cliques`/`mwe-candidates` ile aynı "isteğe bağlı, raw_documents
+  kullan" deseni) — `{lower, upper, point_estimate}` döndürür. ExploreView'da
+  Kelime Klikleri sekmesinin her çift satırına "güven aralığı hesapla"
+  düğmesi eklendi; tıklanınca sadece o çift için istek atılır (korpus
+  yüklenirken veya her arama sonucunda OTOMATİK hesaplanmaz).
 
 ### Büyük Derlem (performans notları)
 

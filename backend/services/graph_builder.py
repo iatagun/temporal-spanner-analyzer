@@ -2,6 +2,7 @@ import csv
 import io
 import json
 import math
+import random
 import re
 from collections import defaultdict
 from datetime import datetime, timezone
@@ -219,15 +220,215 @@ def compute_association_measures(
                 g2 += observed * math.log(observed / expected_cell)
         g2 *= 2
 
+        # p_value: G^2 asymptotically follows a chi-square distribution
+        # with df=1 under the null (independence) hypothesis. Its survival
+        # function has a closed form for df=1 -- P(chi2_1 > x) =
+        # erfc(sqrt(x/2)) -- avoiding a scipy dependency just for this.
+        # Verified against the standard critical values: erfc(sqrt(3.841/2))
+        # = 0.05000, erfc(sqrt(6.635/2)) = 0.01000, erfc(sqrt(10.828/2)) = 0.00100.
+        # g2 is mathematically always >= 0, but a tiny negative float
+        # artifact (rounding) is possible right at 0 -- guard sqrt() with
+        # max() rather than a bare `g2 > 0` check.
+        p_value = math.erfc(math.sqrt(max(g2, 0.0) / 2))
+
         measures[(w1, w2)] = {
             "npmi": npmi,
             "log_likelihood": g2,
             "dice": dice,
             "t_score": t_score,
             "adjacency_ratio": adjacency_count.get((w1, w2), 0) / codf_val,
+            "p_value": p_value,
         }
 
+    # Multiple-comparison correction: with potentially thousands of pairs
+    # tested at once, an uncorrected p<0.05 on log_likelihood produces
+    # ~5% * n_pairs false positives by chance alone. These are purely
+    # informational (like adjacency_ratio) -- gating still uses the raw
+    # measure the caller selected, for backward compatibility.
+    n_pairs = len(measures)
+    if n_pairs > 0:
+        sorted_by_p = sorted(measures.items(), key=lambda kv: kv[1]["p_value"])
+        running_min = 1.0
+        for rank in range(n_pairs, 0, -1):
+            _key, scores = sorted_by_p[rank - 1]
+            raw_p = scores["p_value"]
+            # Benjamini-Hochberg step-up: q(i) = min_{k>=i} p(k)*n/k,
+            # enforced here by scanning from the largest rank down and
+            # keeping a running minimum so q is monotonically non-decreasing
+            # as rank increases (required for BH to be valid).
+            running_min = min(running_min, raw_p * n_pairs / rank)
+            scores["p_value_fdr"] = min(1.0, running_min)
+            scores["p_value_bonferroni"] = min(1.0, raw_p * n_pairs)
+
     return measures, truncated
+
+
+def _is_contiguous_subsequence(short: tuple[str, ...], long: tuple[str, ...]) -> bool:
+    ls, ll = len(short), len(long)
+    if ls >= ll:
+        return False
+    return any(long[i:i + ls] == short for i in range(ll - ls + 1))
+
+
+def extract_mwe_candidates(
+    word_rows: list[list[str]],
+    max_n: int = 4,
+    min_freq: int = 2,
+    top_n: int = 50,
+) -> list[dict]:
+    """Ranks multi-word-expression candidates (contiguous word n-grams,
+    n=2..max_n) by C-value (Frantzi & Ananiadou 1996) -- generalizes
+    compute_association_measures' adjacency_ratio (a coarse bigram-only
+    yes/no signal) into a real term-extraction ranking that accounts for
+    NESTING: "yapay zeka" scores lower if it almost always occurs inside
+    the longer "yapay zeka modeli", since that's evidence it isn't really
+    an independent unit on its own.
+
+    C-value(a) = log2(|a|) * f(a) if `a` is never nested in a longer
+    candidate; otherwise log2(|a|) * (f(a) - mean(f(b) for b in
+    longer-candidates-containing-a)) -- the classic formula.
+
+    n-grams are extracted from the same filtered, order-preserved word
+    list already used for compute_association_measures -- so, like
+    adjacency_ratio, "contiguous" means contiguous in the CONTENT-WORD
+    sequence (stopwords already removed), not the raw original sentence.
+    `min_freq` drops candidates below it entirely, same rationale as
+    `min_codf` elsewhere: a term seen once is coincidence, not a pattern.
+    """
+    freq: dict[tuple[str, ...], int] = defaultdict(int)
+    for words in word_rows:
+        for n in range(2, max_n + 1):
+            for i in range(len(words) - n + 1):
+                freq[tuple(words[i:i + n])] += 1
+
+    candidates = {ngram: f for ngram, f in freq.items() if f >= min_freq}
+    if not candidates:
+        return []
+
+    by_length: dict[int, list[tuple[str, ...]]] = defaultdict(list)
+    for ngram in candidates:
+        by_length[len(ngram)].append(ngram)
+
+    results: list[dict] = []
+    for ngram, f in candidates.items():
+        length = len(ngram)
+        nested_in_freqs = [
+            candidates[longer]
+            for longer_len in range(length + 1, max_n + 1)
+            for longer in by_length.get(longer_len, ())
+            if _is_contiguous_subsequence(ngram, longer)
+        ]
+        if nested_in_freqs:
+            c_value = math.log2(length) * (f - sum(nested_in_freqs) / len(nested_in_freqs))
+        else:
+            c_value = math.log2(length) * f
+        results.append({
+            "ngram": list(ngram),
+            "text": " ".join(ngram),
+            "frequency": f,
+            "c_value": c_value,
+        })
+
+    results.sort(key=lambda r: r["c_value"], reverse=True)
+    return results[:top_n] if top_n else results
+
+
+def _bootstrap_pair_score(codf_val: int, df_w1: int, df_w2: int, N: int, measure: str) -> float:
+    """Same formulas as compute_association_measures' per-pair math, but
+    tolerant of codf_val==0 (a real possibility when bootstrap resampling
+    happens to drop every document containing the pair) -- the batch
+    version never needs this, since it only ever processes pairs already
+    confirmed to have codf_val >= min_codf > 0."""
+    if N == 0:
+        return 0.0
+    p_x = df_w1 / N
+    p_y = df_w2 / N
+    p_xy = codf_val / N
+
+    if measure == "dice":
+        denom = df_w1 + df_w2
+        return (2 * codf_val / denom) if denom > 0 else 0.0
+
+    if measure == "t_score":
+        if codf_val == 0:
+            return 0.0
+        expected = N * p_x * p_y
+        return (codf_val - expected) / math.sqrt(codf_val)
+
+    if measure == "log_likelihood":
+        a, b = codf_val, df_w1 - codf_val
+        c, d = df_w2 - codf_val, N - df_w1 - df_w2 + codf_val
+        row1, row2 = a + b, c + d
+        col1, col2 = a + c, b + d
+        g2 = 0.0
+        for observed, expected_cell in (
+            (a, row1 * col1 / N), (b, row1 * col2 / N),
+            (c, row2 * col1 / N), (d, row2 * col2 / N),
+        ):
+            if observed > 0 and expected_cell > 0:
+                g2 += observed * math.log(observed / expected_cell)
+        return g2 * 2
+
+    # npmi (default)
+    if p_xy <= 0 or p_x <= 0 or p_y <= 0:
+        return -1.0  # no co-occurrence at all -- NPMI's minimal value
+    pmi = math.log(p_xy / (p_x * p_y))
+    if p_xy >= 1.0:
+        return 1.0
+    return pmi / -math.log(p_xy)
+
+
+def bootstrap_confidence_interval(
+    word_rows: list[list[str]],
+    w1: str,
+    w2: str,
+    measure: str = "npmi",
+    n_resamples: int = 500,
+    seed: int | None = None,
+) -> tuple[float, float, float]:
+    """Bootstrap confidence interval for a SINGLE pair's association
+    score. Resamples documents WITH REPLACEMENT n_resamples times,
+    recomputes just this one pair's score in each resample, and returns
+    the (2.5th percentile, 97.5th percentile, point estimate on the full
+    data).
+
+    Deliberately per-pair and opt-in (see /api/pair-confidence), NOT run
+    automatically for every pair a corpus produces: doing this for
+    potentially tens of thousands of pairs (see
+    compute_association_measures) would multiply the whole corpus's
+    computation cost by n_resamples, undoing the Faz A performance work
+    on /api/trends. Presence/absence of each word is precomputed ONCE per
+    document (O(N) total) so each resample only re-sums booleans by
+    index (O(N) per resample) rather than re-scanning word lists --
+    n_resamples=500 stays well under a second even for large corpora.
+    """
+    N = len(word_rows)
+    if N < 2:
+        return (0.0, 0.0, 0.0)
+
+    has_w1 = [w1 in set(row) for row in word_rows]
+    has_w2 = [w2 in set(row) for row in word_rows]
+
+    def _counts(indices: list[int]) -> tuple[int, int, int]:
+        df_w1 = sum(1 for i in indices if has_w1[i])
+        df_w2 = sum(1 for i in indices if has_w2[i])
+        codf = sum(1 for i in indices if has_w1[i] and has_w2[i])
+        return codf, df_w1, df_w2
+
+    codf, df_w1, df_w2 = _counts(list(range(N)))
+    point_estimate = _bootstrap_pair_score(codf, df_w1, df_w2, N, measure)
+
+    rng = random.Random(seed)
+    resampled_scores: list[float] = []
+    for _ in range(n_resamples):
+        indices = [rng.randrange(N) for _ in range(N)]
+        rc, rw1, rw2 = _counts(indices)
+        resampled_scores.append(_bootstrap_pair_score(rc, rw1, rw2, N, measure))
+
+    resampled_scores.sort()
+    lower_idx = int(0.025 * n_resamples)
+    upper_idx = min(n_resamples - 1, int(0.975 * n_resamples))
+    return resampled_scores[lower_idx], resampled_scores[upper_idx], point_estimate
 
 
 def compute_npmi(

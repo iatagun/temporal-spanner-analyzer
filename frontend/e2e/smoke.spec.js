@@ -45,6 +45,12 @@ test('upload sample data, walk all four views, no console errors', async ({ page
   await expect(page.getByText(/^Bağlamda:/)).toBeVisible();
   await expect(page.getByText(/eşleşme\)/)).toBeVisible();
 
+  // MWE candidates (C-value term extraction, /api/mwe-candidates) --
+  // "yapay zeka" repeats often enough in the sample corpus to surface.
+  await page.getByRole('button', { name: 'MWE Adayları' }).click();
+  await page.getByRole('button', { name: 'MWE Adaylarını Hesapla' }).click();
+  await expect(page.getByText(/C=/).first()).toBeVisible({ timeout: 15_000 });
+
   expect(errors, `console/page errors:\n${errors.join('\n')}`).toEqual([]);
 });
 

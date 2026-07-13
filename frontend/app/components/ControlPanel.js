@@ -47,7 +47,7 @@ export default function ControlPanel({
         }}
       >
         <div className="text-sm text-gray-500 dark:text-gray-400 mb-3">
-          CoNLL-U, VRT, CSV veya JSON dosyası sürükleyin
+          CoNLL-U, VRT, TEI/XML, CSV veya JSON dosyası sürükleyin
         </div>
 
         <div className="flex items-center justify-center gap-3">
@@ -55,7 +55,7 @@ export default function ControlPanel({
             Dosya Seç
             <input
               type="file"
-              accept=".csv,.json,.conllu,.conll,.vrt"
+              accept=".csv,.json,.conllu,.conll,.vrt,.xml,.tei"
               ref={fileRef}
               className="hidden"
               onChange={() => {
@@ -77,7 +77,7 @@ export default function ControlPanel({
         </div>
 
         <div className="mt-3 text-xs text-gray-400 dark:text-gray-500">
-          .conllu .vrt .csv .json
+          .conllu .vrt .xml .tei .csv .json
         </div>
       </div>
 
