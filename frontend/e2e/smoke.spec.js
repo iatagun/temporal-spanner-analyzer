@@ -10,10 +10,26 @@ function trackConsoleErrors(page) {
   return errors;
 }
 
+test('landing page renders and its CTA opens the tool at /app', async ({ page }) => {
+  // Regression coverage for the landing/tool route split: "/" used to BE
+  // the tool directly; now it's a separate marketing page whose "Aracı Aç"
+  // CTA must land on the actual tool at /app.
+  const errors = trackConsoleErrors(page);
+  await page.goto('/');
+
+  await expect(page.getByText('Temporal Spanner Analyzer').first()).toBeVisible();
+  await expect(page.getByRole('heading', { name: /kavramların zamanla nasıl evrildiğini/ })).toBeVisible();
+  await page.getByRole('link', { name: 'Aracı Aç' }).first().click();
+  await expect(page).toHaveURL(/\/app$/);
+  await expect(page.getByRole('button', { name: 'Örnek Veri ile Dene' })).toBeVisible();
+
+  expect(errors, `console/page errors:\n${errors.join('\n')}`).toEqual([]);
+});
+
 test('upload sample data, walk all four views, no console errors', async ({ page }) => {
   const errors = trackConsoleErrors(page);
 
-  await page.goto('/');
+  await page.goto('/app');
   await expect(page.getByText('Temporal Spanner Analyzer')).toBeVisible();
 
   await page.getByRole('button', { name: 'Örnek Veri ile Dene' }).click();
@@ -60,7 +76,7 @@ test('syntactic collocation mode works with the sample data (regression)', async
   // It was hand-annotated with compound-noun-phrase dependencies -- must
   // now upload successfully.
   const errors = trackConsoleErrors(page);
-  await page.goto('/');
+  await page.goto('/app');
 
   await page.getByRole('button', { name: /Gelişmiş/ }).click();
   await page.getByRole('combobox').filter({ hasText: 'Pencere' }).selectOption('syntactic');
@@ -77,7 +93,7 @@ test('large-graph upload does not freeze the page (regression)', async ({ page }
   // upload a file with a large-ish vocabulary and confirm the page stays
   // responsive well within a few seconds, not tens of seconds/minutes.
   const errors = trackConsoleErrors(page);
-  await page.goto('/');
+  await page.goto('/app');
 
   const filePath = path.resolve(__dirname, 'fixtures', 'many_words.csv');
   await page.locator('input[type="file"]').setInputFiles(filePath);

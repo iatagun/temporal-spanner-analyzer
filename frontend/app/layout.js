@@ -35,7 +35,7 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className={`${newsreader.variable} ${sourceSans.variable}`}>
+    <html lang="tr" className={`${newsreader.variable} ${sourceSans.variable}`}>
       <head>
         <meta httpEquiv="Content-Security-Policy" content="script-src 'self' 'unsafe-eval' 'unsafe-inline';" />
         <meta name="google-site-verification" content="iWWxPp7bzUz7BIlM8Kb27tIKEtz_6Y9iz1tqI6TGEI4" />
