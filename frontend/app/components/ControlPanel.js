@@ -2,14 +2,34 @@
 
 import { useRef, useState } from 'react';
 
+// Each measure has its own scale, so the threshold input's bounds/step
+// need to change with it -- NPMI is bounded [-1,1]; the others are not.
+const MEASURE_INPUT_RANGE = {
+  npmi: { min: -1, max: 1, step: 0.05 },
+  log_likelihood: { min: 0, max: 200, step: 0.5 },
+  dice: { min: 0, max: 1, step: 0.05 },
+  t_score: { min: -10, max: 50, step: 0.1 },
+};
+
+const MEASURE_LABELS = {
+  npmi: 'NPMI',
+  log_likelihood: 'Log-likelihood (G²)',
+  dice: 'Dice',
+  t_score: 't-score',
+};
+
 export default function ControlPanel({
   loading, onUpload, minFreq, setMinFreq, onSample,
   minCliqueSize, setMinCliqueSize, maxCliques, setMaxCliques,
   pmiThreshold, setPmiThreshold,
+  associationMeasure, onMeasureChange,
+  collocationMode, setCollocationMode,
+  lemmatize, setLemmatize,
   showAdvanced, setShowAdvanced,
 }) {
   const fileRef = useRef(null);
   const [dragOver, setDragOver] = useState(false);
+  const range = MEASURE_INPUT_RANGE[associationMeasure] || MEASURE_INPUT_RANGE.npmi;
 
   return (
     <div className="mb-6">
@@ -110,18 +130,52 @@ export default function ControlPanel({
               />
             </label>
             <label className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-              PMI Eşiği
+              Birliktelik Ölçütü
+              <select
+                value={associationMeasure}
+                onChange={e => onMeasureChange(e.target.value)}
+                className="px-2 py-1.5 border border-gray-200 dark:border-gray-700 rounded text-xs bg-white dark:bg-gray-900 dark:text-gray-100"
+              >
+                {Object.entries(MEASURE_LABELS).map(([key, label]) => (
+                  <option key={key} value={key}>{label}</option>
+                ))}
+              </select>
+            </label>
+            <label className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+              Eşik
               <input
-                type="number" min={-1} max={1} step={0.05} value={pmiThreshold}
-                onChange={e => setPmiThreshold(Math.min(1, Math.max(-1, Number(e.target.value))))}
-                className="w-16 px-2 py-1.5 border border-gray-200 dark:border-gray-700 rounded text-xs bg-white dark:bg-gray-900 dark:text-gray-100"
+                type="number" min={range.min} max={range.max} step={range.step} value={pmiThreshold}
+                onChange={e => setPmiThreshold(Math.min(range.max, Math.max(range.min, Number(e.target.value))))}
+                className="w-20 px-2 py-1.5 border border-gray-200 dark:border-gray-700 rounded text-xs bg-white dark:bg-gray-900 dark:text-gray-100"
               />
+            </label>
+            <label className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+              Birliktelik Modu
+              <select
+                value={collocationMode}
+                onChange={e => setCollocationMode(e.target.value)}
+                className="px-2 py-1.5 border border-gray-200 dark:border-gray-700 rounded text-xs bg-white dark:bg-gray-900 dark:text-gray-100"
+              >
+                <option value="window">Pencere (aynı cümle)</option>
+                <option value="syntactic">Sözdizimsel (CoNLL-U)</option>
+              </select>
+            </label>
+            <label className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+              <input
+                type="checkbox" checked={lemmatize}
+                onChange={e => setLemmatize(e.target.checked)}
+                className="rounded border-gray-300 dark:border-gray-700"
+              />
+              Türkçe kök indirgeme (deneysel, CSV/JSON)
             </label>
           </div>
           <ul className="mt-2 space-y-0.5 text-[11px] text-gray-400 dark:text-gray-500 leading-relaxed">
             <li><strong className="text-gray-500 dark:text-gray-400 font-medium">Min Klik Boyutu</strong> — spanner'a dahil edilecek en küçük kelime kümesi büyüklüğü.</li>
             <li><strong className="text-gray-500 dark:text-gray-400 font-medium">Maks Klik</strong> — işlenecek klik sayısı üst sınırı (0 = sınırsız).</li>
-            <li><strong className="text-gray-500 dark:text-gray-400 font-medium">PMI Eşiği</strong> — kelime çiftinin kenar sayılması için gereken minimum NPMI anlamlılık skoru (-1..1). Yükleme anında uygulanır, dosyayı yeniden yüklemeniz gerekir.</li>
+            <li><strong className="text-gray-500 dark:text-gray-400 font-medium">Birliktelik Ölçütü</strong> — kelime çiftinin kenar sayılıp sayılmayacağına hangi istatistiğin karar vereceği (NPMI, Dunning'in log-likelihood'ı, Dice katsayısı veya t-score). Hepsi her kenar için ayrıca hesaplanıp saklanır; bu sadece kapı görevi görecek olanı seçer.</li>
+            <li><strong className="text-gray-500 dark:text-gray-400 font-medium">Eşik</strong> — seçili ölçütün kenar sayılması için gereken minimum değeri (ölçüt değiştiğinde makul bir varsayılana sıçrar). Yükleme anında uygulanır, dosyayı yeniden yüklemeniz gerekir.</li>
+            <li><strong className="text-gray-500 dark:text-gray-400 font-medium">Birliktelik Modu</strong> — &quot;Pencere&quot; aynı cümlede geçen her çifti sayar (varsayılan, tüm formatlar); &quot;Sözdizimsel&quot; yalnızca doğrudan bağımlılık ilişkisi olan çiftleri sayar (örn. sıfat-isim) ve sadece HEAD/DEPREL sütunlu CoNLL-U dosyalarında çalışır — başka bir formatta seçilirse yükleme reddedilir.</li>
+            <li><strong className="text-gray-500 dark:text-gray-400 font-medium">Türkçe kök indirgeme</strong> — CSV/JSON'da (CoNLL-U/VRT'nin aksine lemma bilgisi taşımayan formatlarda) her kelimeyi Zeyrek ile köküne indirger (örn. &quot;kitaplar&quot;→&quot;kitap&quot;), çekim varyantlarının ayrı düğüm olmasını önler. İlk kullanımda birkaç saniyelik bir başlatma maliyeti var.</li>
           </ul>
         </div>
       )}

@@ -60,6 +60,137 @@ def test_upload_pmi_threshold_form_field_is_applied():
     assert r_strict.json()["pmi_threshold"] == 0.99
 
 
+def test_upload_association_measure_changes_gating_and_edges_carry_all_scores():
+    # Regression/wiring test: with the same numeric threshold (5.0, well
+    # above NPMI's [-1,1] ceiling but below log-likelihood's for a strong
+    # pair), the active association_measure must actually decide which
+    # edges survive -- not silently fall back to NPMI regardless of the
+    # request. "kedi,kopek" is an isolated, perfectly-correlated pair
+    # (log-likelihood ~7.6); "yapay" is diluted by appearing with two
+    # different partners (log-likelihood ~2.1).
+    csv_content = (
+        b"date,words\n"
+        b"2020-01-05,\"yapay,zeka\"\n"
+        b"2020-02-01,\"yapay,zeka\"\n"
+        b"2020-03-12,\"yapay,ogrenme\"\n"
+        b"2020-04-01,\"yapay,ogrenme\"\n"
+        b"2020-05-01,\"kedi,kopek\"\n"
+        b"2020-06-01,\"kedi,kopek\"\n"
+    )
+    r_npmi = client.post(
+        "/api/upload",
+        files={"file": ("test.csv", csv_content, "text/csv")},
+        data={"pmi_threshold": "5.0", "association_measure": "npmi"},
+    )
+    r_ll = client.post(
+        "/api/upload",
+        files={"file": ("test.csv", csv_content, "text/csv")},
+        data={"pmi_threshold": "5.0", "association_measure": "log_likelihood"},
+    )
+    assert r_npmi.status_code == 200 and r_ll.status_code == 200
+    assert r_npmi.json()["graph"]["edges"] == []  # every NPMI score is <= 1.0 < 5.0
+    assert r_npmi.json()["association_measure"] == "npmi"
+
+    ll_edges = r_ll.json()["graph"]["edges"]
+    # One edge instance per document occurrence (2 "kedi,kopek" rows) --
+    # same pair, same scores, different labels. Only the FIRST occurrence
+    # carries `scores` (see graph_builder._words_to_edges_filtered) -- a
+    # 27MB synthetic corpus with pairs repeating ~22x on average showed
+    # this duplication alone bloating the upload response from ~80MB to
+    # 200MB+, for data every consumer already dedups by pair anyway.
+    assert len(ll_edges) == 2
+    pairs = {(e["u"], e["v"]) if e["u"] <= e["v"] else (e["v"], e["u"]) for e in ll_edges}
+    assert pairs == {("kedi", "kopek")}
+    assert set(ll_edges[0]["scores"].keys()) == {"npmi", "log_likelihood", "dice", "t_score"}
+    assert ll_edges[0]["scores"]["log_likelihood"] > 5.0
+    assert ll_edges[1]["scores"] == {}
+    assert r_ll.json()["association_measure"] == "log_likelihood"
+
+
+def test_upload_rejects_unknown_association_measure():
+    csv_content = b"date,words\n2020-01-05,\"a,b\"\n2020-02-01,\"a,b\"\n"
+    r = client.post(
+        "/api/upload",
+        files={"file": ("test.csv", csv_content, "text/csv")},
+        data={"association_measure": "bogus"},
+    )
+    assert r.status_code == 422
+
+
+def test_upload_lemmatize_collapses_inflected_forms_into_one_node():
+    # "kitaplar" (books) and "kitap" (book) are two inflections of the
+    # same lemma -- without lemmatization each is a separate vertex, and
+    # ("kitaplar","masa")/("kitap","masa") each only co-occur once
+    # (codf=1 < min_codf=2), so NEITHER clears the threshold -- no edge
+    # at all. With lemmatize=True both rows collapse onto the same
+    # ("kitap","masa") pair, codf=2, and the edge appears.
+    csv_content = (
+        b"date,words\n"
+        b"2020-01-05,\"kitaplar,masa\"\n"
+        b"2020-02-01,\"kitap,masa\"\n"
+    )
+    r_plain = client.post(
+        "/api/upload",
+        files={"file": ("test.csv", csv_content, "text/csv")},
+        data={"pmi_threshold": "-1.0"},
+    )
+    r_lemma = client.post(
+        "/api/upload",
+        files={"file": ("test.csv", csv_content, "text/csv")},
+        data={"pmi_threshold": "-1.0", "lemmatize": "true"},
+    )
+    assert r_plain.status_code == 200 and r_lemma.status_code == 200
+    assert r_plain.json()["graph"]["edges"] == []
+    assert {"kitaplar", "kitap", "masa"} <= set(r_plain.json()["graph"]["vertices"])
+
+    lemma_vertices = set(r_lemma.json()["graph"]["vertices"])
+    assert lemma_vertices == {"kitap", "masa"}
+    lemma_pairs = {
+        (e["u"], e["v"]) if e["u"] <= e["v"] else (e["v"], e["u"])
+        for e in r_lemma.json()["graph"]["edges"]
+    }
+    assert ("kitap", "masa") in lemma_pairs
+
+
+def test_upload_conllu_syntactic_collocation_excludes_sibling_pairs():
+    # "buyuk"/"iyi" are both amod children of "ev" (siblings, not directly
+    # connected) -- collocation_mode=syntactic must exclude that pair,
+    # while the default "window" mode includes it (see
+    # test_collocation_mode_syntactic_excludes_sibling_pairs for the unit
+    # version). Repeated twice so every pair clears min_codf=2.
+    conllu_content = (
+        "# date = 2020-01-01\n"
+        "1\tbuyuk\tbuyuk\tADJ\t_\t_\t2\tamod\t_\t_\n"
+        "2\tev\tev\tNOUN\t_\t_\t0\troot\t_\t_\n"
+        "3\tiyi\tiyi\tADJ\t_\t_\t2\tamod\t_\t_\n"
+        "\n"
+        "# date = 2020-02-01\n"
+        "1\tbuyuk\tbuyuk\tADJ\t_\t_\t2\tamod\t_\t_\n"
+        "2\tev\tev\tNOUN\t_\t_\t0\troot\t_\t_\n"
+        "3\tiyi\tiyi\tADJ\t_\t_\t2\tamod\t_\t_\n"
+    ).encode()
+    r = client.post(
+        "/api/upload",
+        files={"file": ("test.conllu", conllu_content, "text/plain")},
+        data={"pmi_threshold": "-1.0", "collocation_mode": "syntactic"},
+    )
+    assert r.status_code == 200
+    pairs = {(e["u"], e["v"]) if e["u"] <= e["v"] else (e["v"], e["u"]) for e in r.json()["graph"]["edges"]}
+    assert pairs == {("buyuk", "ev"), ("ev", "iyi")}
+
+
+def test_upload_rejects_syntactic_collocation_for_non_conllu():
+    # Only CoNLL-U carries HEAD/DEPREL -- VRT/CSV/JSON must be rejected
+    # upfront rather than silently falling back to window mode.
+    csv_content = b"date,words\n2020-01-05,\"yapay,zeka\"\n2020-02-01,\"yapay,zeka\"\n"
+    r = client.post(
+        "/api/upload",
+        files={"file": ("test.csv", csv_content, "text/csv")},
+        data={"collocation_mode": "syntactic"},
+    )
+    assert r.status_code == 400
+
+
 def test_upload_json_success():
     json_content = b'[{"date": "2020-01-05", "words": ["yapay", "zeka"]}, {"date": "2020-03-12", "words": ["yapay", "ogrenme"]}]'
     r = client.post("/api/upload", files={"file": ("test.json", json_content, "application/json")})

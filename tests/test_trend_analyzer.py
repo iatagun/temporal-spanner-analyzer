@@ -80,6 +80,32 @@ def test_compute_trends_raw_documents_pmi_threshold_gates_local_significance():
     assert trend.timelines == []
 
 
+def test_compute_trends_raw_documents_respects_selected_measure():
+    # A pair present in literally every document of a window is NPMI's
+    # (and Dice's) maximal case (1.0) but log-likelihood's *minimal* case
+    # (0.0 -- no deviation from independence to detect when there's no
+    # variation in the sample). If `measure` weren't actually threaded
+    # into the per-window recompute, this would silently keep using NPMI
+    # regardless of what the caller asked for.
+    raw_documents = [
+        (0.0, ["x", "y", "z"]),
+        (0.0, ["x", "y", "z"]),
+        (0.0, ["x", "y", "z"]),
+    ]
+    graph = GraphSchema(vertices=["x", "y", "z"], edges=[])
+
+    trend_npmi = compute_trends(
+        graph, windows=1, raw_documents=raw_documents, pmi_threshold=0.5, measure="npmi"
+    )
+    trend_ll = compute_trends(
+        graph, windows=1, raw_documents=raw_documents, pmi_threshold=0.5, measure="log_likelihood"
+    )
+
+    npmi_members = [frozenset(m for s in tl.snapshots for m in s.members) for tl in trend_npmi.timelines]
+    assert frozenset({"x", "y", "z"}) in npmi_members
+    assert trend_ll.timelines == []  # log-likelihood is 0.0 here, below the 0.5 gate
+
+
 def test_compute_trends_empty_raw_documents_falls_back_to_graph_slicing():
     # An empty raw_documents list (e.g. an older client that doesn't send
     # them) must fall back to the original graph-edge-slicing behavior,

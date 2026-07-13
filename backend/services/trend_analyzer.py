@@ -5,7 +5,7 @@ from backend.models import (
     CliqueTimeline,
     TrendResponse,
 )
-from backend.services.graph_builder import compute_npmi
+from backend.services.graph_builder import compute_association_measures
 from backend.services.graph_utils import maximal_cliques
 
 
@@ -69,13 +69,16 @@ def _windows_from_global_graph(
 
 
 def _windows_from_raw_documents(
-    raw_documents: list[tuple[float, list[str]]], windows: int, pmi_threshold: float
+    raw_documents: list[tuple[float, list[str]]], windows: int, pmi_threshold: float, measure: str
 ) -> tuple[float, float, float, list[int], list[list[set[str]]], bool]:
-    """Recomputes NPMI independently within each time window's own
-    documents, instead of slicing a single corpus-global edge set. A pair
-    can be strongly significant in one window and never clear the global
-    threshold (diluted by the rest of the corpus), or vice versa -- this
-    is the only way to surface that."""
+    """Recomputes association scores independently within each time
+    window's own documents, instead of slicing a single corpus-global edge
+    set. A pair can be strongly significant in one window and never clear
+    the global threshold (diluted by the rest of the corpus), or vice
+    versa -- this is the only way to surface that. `measure` must match
+    whichever association measure the corpus was uploaded with, or
+    "significant" silently means something different here than it did at
+    upload time."""
     docs_sorted = sorted(raw_documents, key=lambda d: d[0])
     doc_labels = [d[0] for d in docs_sorted]
     doc_words = [d[1] for d in docs_sorted]
@@ -97,11 +100,11 @@ def _windows_from_raw_documents(
         end_idx = bisect_left(doc_labels, we)
         window_docs = doc_words[start_idx:end_idx]
 
-        npmi = compute_npmi(window_docs)
+        scores = compute_association_measures(window_docs)
         window_adj: dict[str, set[str]] = {}
         edge_count = 0
-        for (u, v), score in npmi.items():
-            if score >= pmi_threshold:
+        for (u, v), pair_scores in scores.items():
+            if pair_scores[measure] >= pmi_threshold:
                 window_adj.setdefault(u, set()).add(v)
                 window_adj.setdefault(v, set()).add(u)
                 edge_count += 1
@@ -120,10 +123,11 @@ def compute_trends(
     windows: int = 10,
     raw_documents: list[tuple[float, list[str]]] | None = None,
     pmi_threshold: float = 0.15,
+    measure: str = "npmi",
 ) -> TrendResponse:
     if raw_documents:
         t_min, t_max, step, window_edges, window_cliques, any_truncated = (
-            _windows_from_raw_documents(raw_documents, windows, pmi_threshold)
+            _windows_from_raw_documents(raw_documents, windows, pmi_threshold, measure)
         )
     else:
         if not graph.edges:

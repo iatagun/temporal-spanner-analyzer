@@ -1,11 +1,21 @@
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import Dict, List, Literal, Optional
+
+# The four association measures a corpus can be gated on (see
+# graph_builder.compute_association_measures); shared by every request/
+# response model that carries a measure choice or a threshold against it.
+AssociationMeasure = Literal["npmi", "log_likelihood", "dice", "t_score"]
 
 
 class EdgeSchema(BaseModel):
     u: str
     v: str
     label: float
+    # All four association measures for this pair, computed once at
+    # upload time -- not just the one `association_measure` gated the
+    # edge on. Lets the UI show "NPMI 0.42 / G^2 18.3 / Dice 0.31 / t 4.1"
+    # side by side instead of locking a corpus linguist into one number.
+    scores: Dict[str, float] = {}
 
 
 class GraphSchema(BaseModel):
@@ -54,11 +64,14 @@ class CsvRow(BaseModel):
 
 
 class RawDocumentSchema(BaseModel):
-    """One corpus row/sentence as (resolved date label, content words) --
-    preserved past upload so /api/trends can recompute NPMI per time
-    window instead of only slicing the corpus-global edge set."""
+    """One corpus row/sentence as (resolved date label, content words,
+    original raw text) -- preserved past upload so /api/trends can
+    recompute association scores per time window instead of only slicing
+    the corpus-global edge set, and so the frontend can show KWIC/
+    concordance context for a word or pair without a second request."""
     label: float
     words: List[str]
+    text: str = ""
 
 
 class UploadResponse(BaseModel):
@@ -66,7 +79,13 @@ class UploadResponse(BaseModel):
     rows_parsed: int
     time_range: List[str]
     stopwords_filtered: int = 0
+    # NOTE: kept as `pmi_threshold` (not renamed to a generic `threshold`)
+    # for backward compatibility -- its meaning is now "the gate value for
+    # whichever `association_measure` was selected", not always an NPMI
+    # score. NPMI's [-1,1] scale no longer bounds it (log-likelihood/
+    # t-score are unbounded), see AssociationMeasure/Field bounds below.
     pmi_threshold: float = 0.0
+    association_measure: AssociationMeasure = "npmi"
     raw_documents: List[RawDocumentSchema] = []
 
 
@@ -90,13 +109,17 @@ class CliqueTimeline(BaseModel):
 class TrendRequest(BaseModel):
     graph: GraphSchema
     windows: int = Field(10, ge=1, le=200)
-    # When present, trend computation recomputes NPMI independently within
-    # each time window instead of slicing the single corpus-global edge set
-    # -- see trend_analyzer.compute_trends. pmi_threshold must match the
-    # value the corpus was uploaded with for "significant" to mean the same
-    # thing locally as it did globally.
+    # When present, trend computation recomputes association scores
+    # independently within each time window instead of slicing the single
+    # corpus-global edge set -- see trend_analyzer.compute_trends.
+    # pmi_threshold/association_measure must match what the corpus was
+    # uploaded with for "significant" to mean the same thing locally as
+    # it did globally.
     raw_documents: List[RawDocumentSchema] = []
-    pmi_threshold: float = Field(0.15, ge=-1.0, le=1.0)
+    # Widened from NPMI's [-1,1] band: log-likelihood/t-score are
+    # unbounded, so a fixed range can't fit every measure.
+    pmi_threshold: float = Field(0.15, ge=-1000.0, le=1000.0)
+    association_measure: AssociationMeasure = "npmi"
 
 
 class TrendResponse(BaseModel):

@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import Field
 from typing import List, Optional
 
-from backend.models import GraphSchema, BaseModel, RawDocumentSchema
+from backend.models import GraphSchema, BaseModel, RawDocumentSchema, AssociationMeasure
 from backend.services.trend_analyzer import compute_trends
 
 
@@ -11,7 +11,8 @@ class WordCliqueRequest(BaseModel):
     word: str
     windows: int = Field(10, ge=1, le=200)
     raw_documents: List[RawDocumentSchema] = []
-    pmi_threshold: float = Field(0.15, ge=-1.0, le=1.0)
+    pmi_threshold: float = Field(0.15, ge=-1000.0, le=1000.0)
+    association_measure: AssociationMeasure = "npmi"
 
 
 class WordCliqueSnapshotResponse(BaseModel):
@@ -62,6 +63,7 @@ def word_cliques(req: WordCliqueRequest):
         windows=req.windows,
         raw_documents=raw_documents,
         pmi_threshold=req.pmi_threshold,
+        measure=req.association_measure,
     )
 
     cliques_map: dict[str, dict] = {}

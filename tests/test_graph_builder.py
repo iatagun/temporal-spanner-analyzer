@@ -1,8 +1,11 @@
+import pytest
+
 from backend.services.graph_builder import (
     parse_label,
     parse_corpus_rows,
     parse_json,
     compute_npmi,
+    compute_association_measures,
     _is_content_word,
 )
 
@@ -36,9 +39,9 @@ def test_corpus_rows_without_date_metadata_does_not_crash():
     # string) so this also exercises the stopword-fallback path of
     # _is_content_word.
     rows = [
-        ("", [("elma", ""), ("armut", "")]),
-        ("", [("armut", ""), ("muz", "")]),
-        ("", [("elma", ""), ("muz", "")]),
+        ("", [("elma", ""), ("armut", "")], "elma armut", []),
+        ("", [("armut", ""), ("muz", "")], "armut muz", []),
+        ("", [("elma", ""), ("muz", "")], "elma muz", []),
     ]
     graph, dates, rows_parsed, _, _ = parse_corpus_rows(rows)
     assert rows_parsed == 3
@@ -47,8 +50,8 @@ def test_corpus_rows_without_date_metadata_does_not_crash():
 
 def test_corpus_rows_flags_mostly_unparseable_dates():
     rows = [
-        ("garbled-date-1", [("aa", "NOUN"), ("bb", "NOUN")]),
-        ("garbled-date-2", [("bb", "NOUN"), ("cc", "NOUN")]),
+        ("garbled-date-1", [("aa", "NOUN"), ("bb", "NOUN")], "aa bb", []),
+        ("garbled-date-2", [("bb", "NOUN"), ("cc", "NOUN")], "bb cc", []),
     ]
     try:
         parse_corpus_rows(rows)
@@ -63,14 +66,83 @@ def test_corpus_rows_pos_filter_drops_function_words():
     # and keep content words (NOUN/VERB/ADJ/PROPN), even though they're not
     # in the (Turkish-only, CSV/JSON-only) stopword list.
     rows = [
-        ("2020-01-01", [("elma", "NOUN"), ("ve", "CCONJ"), ("armut", "NOUN")]),
-        ("2020-02-01", [("elma", "NOUN"), ("ve", "CCONJ"), ("armut", "NOUN")]),
+        ("2020-01-01", [("elma", "NOUN"), ("ve", "CCONJ"), ("armut", "NOUN")], "elma ve armut", []),
+        ("2020-02-01", [("elma", "NOUN"), ("ve", "CCONJ"), ("armut", "NOUN")], "elma ve armut", []),
     ]
     graph, _, rows_parsed, stopword_count, _ = parse_corpus_rows(rows)
     assert rows_parsed == 2
     assert "ve" not in graph.vertices
     assert set(graph.vertices) == {"elma", "armut"}
     assert stopword_count == 2  # "ve" dropped from both rows
+
+
+def _syntactic_test_rows():
+    # "buyuk ev" and "iyi ev" are direct amod->NOUN dependencies; "buyuk"
+    # and "iyi" are siblings (both children of "ev") -- connected only via
+    # the same-sentence window, never by a direct HEAD edge. Repeated
+    # twice (different dates) so every pair clears the default min_codf=2.
+    from backend.services.corpus_parser import parse_conllu
+    content = (
+        "# date = 2020-01-01\n"
+        "1\tbuyuk\tbuyuk\tADJ\t_\t_\t2\tamod\t_\t_\n"
+        "2\tev\tev\tNOUN\t_\t_\t0\troot\t_\t_\n"
+        "3\tiyi\tiyi\tADJ\t_\t_\t2\tamod\t_\t_\n"
+        "\n"
+        "# date = 2020-02-01\n"
+        "1\tbuyuk\tbuyuk\tADJ\t_\t_\t2\tamod\t_\t_\n"
+        "2\tev\tev\tNOUN\t_\t_\t0\troot\t_\t_\n"
+        "3\tiyi\tiyi\tADJ\t_\t_\t2\tamod\t_\t_\n"
+    )
+    return parse_conllu(content, filename="test.conllu")
+
+
+def test_collocation_mode_window_includes_sibling_pairs():
+    rows = _syntactic_test_rows()
+    graph, *_ = parse_corpus_rows(rows, pmi_threshold=-1.0, collocation_mode="window")
+    pairs = {(e.u, e.v) if e.u <= e.v else (e.v, e.u) for e in graph.edges}
+    assert ("buyuk", "iyi") in pairs  # siblings under "ev" -- only a window pair
+
+
+def test_collocation_mode_syntactic_excludes_sibling_pairs():
+    rows = _syntactic_test_rows()
+    graph, *_ = parse_corpus_rows(rows, pmi_threshold=-1.0, collocation_mode="syntactic")
+    pairs = {(e.u, e.v) if e.u <= e.v else (e.v, e.u) for e in graph.edges}
+    assert pairs == {("buyuk", "ev"), ("ev", "iyi")}
+    assert ("buyuk", "iyi") not in pairs  # never a direct HEAD relation
+
+
+def test_collocation_mode_syntactic_requires_dependency_info():
+    # A corpus with no HEAD/DEPREL at all (e.g. routed from VRT, which
+    # always returns empty deps) can't do syntactic collocation.
+    rows = [("2020-01-01", [("elma", "NOUN"), ("armut", "NOUN")], "elma armut", [])]
+    try:
+        parse_corpus_rows(rows, collocation_mode="syntactic")
+        assert False, "expected ValueError for a corpus with no dependency info"
+    except ValueError:
+        pass
+
+
+def test_collocation_mode_syntactic_rejects_4column_conllu_with_blank_heads():
+    # Regression test: a 4-column CoNLL-U (word/lemma/pos only, no HEAD --
+    # e.g. this project's own shipped sample.conllu) still gives every
+    # token a `deps` entry (just with a blank head_id), so a naive
+    # "is deps non-empty" check would miss this and silently produce an
+    # empty graph instead of a clear error.
+    rows = [("2020-01-01", [("elma", "NOUN"), ("armut", "NOUN")], "elma armut", [("1", "", ""), ("2", "", "")])]
+    try:
+        parse_corpus_rows(rows, collocation_mode="syntactic")
+        assert False, "expected ValueError for a corpus with blank head_id everywhere"
+    except ValueError:
+        pass
+
+
+def test_collocation_mode_rejects_unknown_value():
+    rows = _syntactic_test_rows()
+    try:
+        parse_corpus_rows(rows, collocation_mode="bogus")
+        assert False, "expected ValueError for an unknown collocation mode"
+    except ValueError:
+        pass
 
 
 def test_is_content_word_pos_vs_fallback():
@@ -124,3 +196,35 @@ def test_compute_pmi_is_normalized_and_penalizes_hapax():
     assert ("e", "f") not in pmi  # codf=1 < default min_codf=2
     for score in pmi.values():
         assert -1.0 <= score <= 1.0
+
+
+def test_compute_association_measures_matches_hand_computed_values():
+    # "x" appears in 5 of 6 docs, "y" in 2, both co-occur in 2 -- an
+    # asymmetric case where NPMI/Dice/t-score/log-likelihood genuinely
+    # differ (unlike the perfectly-correlated a-b/c-d pairs in the NPMI
+    # test above, where every measure degenerates to its max). Values
+    # below are hand-derived from the standard formulas (Dunning 1993 for
+    # log-likelihood) and cross-checked against the implementation.
+    rows = [["x", "y"], ["x", "y"], ["x"], ["x"], ["x"], ["z", "w"]]
+    scores = compute_association_measures(rows)["x", "y"]
+    assert scores["npmi"] == pytest.approx(0.16596, abs=1e-4)
+    assert scores["dice"] == pytest.approx(4 / 7, abs=1e-6)
+    assert scores["t_score"] == pytest.approx(0.23570, abs=1e-4)
+    assert scores["log_likelihood"] == pytest.approx(0.90805, abs=1e-4)
+
+
+def test_compute_association_measures_respects_min_codf_for_every_measure():
+    # A pair below min_codf must be absent from the result entirely --
+    # not just gated out of one measure -- since all four measures are
+    # computed from the same codf/df pass.
+    rows = [["a", "b"], ["a", "b"], ["c", "d"], ["c", "d"], ["a", "b"], ["c", "d"], ["e", "f"]]
+    scores = compute_association_measures(rows)
+    assert ("e", "f") not in scores
+    assert set(scores[("a", "b")].keys()) == {"npmi", "log_likelihood", "dice", "t_score"}
+
+
+def test_compute_npmi_is_a_thin_view_over_association_measures():
+    rows = [["x", "y"], ["x", "y"], ["x"], ["x"], ["x"], ["z", "w"]]
+    npmi_only = compute_npmi(rows)
+    full = compute_association_measures(rows)
+    assert npmi_only[("x", "y")] == full[("x", "y")]["npmi"]

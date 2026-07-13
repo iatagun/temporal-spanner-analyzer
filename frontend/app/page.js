@@ -15,6 +15,18 @@ import RightSidebar from './components/RightSidebar';
 import { filterGraph } from './lib/utils';
 import { computeSpanner, computeTrends, computeCompare, uploadCSV } from './lib/api';
 
+// Each association measure has its own scale (NPMI is bounded [-1,1];
+// log-likelihood/t-score are not), so the sensible "significant" default
+// differs per measure -- log_likelihood=3.84 is the chi-square critical
+// value at p<0.05 (df=1), t_score~2.0 is the conventional collocation
+// significance cutoff, dice=0.1 is a modest floor on its [0,1] scale.
+const MEASURE_DEFAULT_THRESHOLD = {
+  npmi: 0.15,
+  log_likelihood: 3.84,
+  dice: 0.1,
+  t_score: 2.0,
+};
+
 export default function Home() {
   const [view, setView] = useState('spanner');
   const [loading, setLoading] = useState(false);
@@ -36,8 +48,16 @@ export default function Home() {
   const [minCliqueSize, setMinCliqueSize] = useState(3);
   const [maxCliques, setMaxCliques] = useState(0);
   const [pmiThreshold, setPmiThreshold] = useState(0.15);
+  const [associationMeasure, setAssociationMeasure] = useState('npmi');
+  const [collocationMode, setCollocationMode] = useState('window');
+  const [lemmatize, setLemmatize] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const debounceRef = useRef(null);
+
+  const handleMeasureChange = (measure) => {
+    setAssociationMeasure(measure);
+    setPmiThreshold(MEASURE_DEFAULT_THRESHOLD[measure] ?? 0.15);
+  };
 
   const uploadTimeRange = useMemo(() => {
     if (!timeRange) return null;
@@ -70,13 +90,13 @@ export default function Home() {
     if (!graph || graph.edges.length === 0) { setTrendData(null); return; }
     setLoading(true); setError(null);
     try {
-      setTrendData(await computeTrends(graph, 10, { rawDocuments, pmiThreshold }));
+      setTrendData(await computeTrends(graph, 10, { rawDocuments, pmiThreshold, associationMeasure }));
     } catch (e) {
       setError(e.message);
     } finally {
       setLoading(false);
     }
-  }, [rawDocuments, pmiThreshold]);
+  }, [rawDocuments, pmiThreshold, associationMeasure]);
 
   const doCompare = useCallback(async (graphA, graphB) => {
     if (!graphA || !graphB || graphA.vertices.length < 2 || graphB.vertices.length < 2) {
@@ -96,7 +116,7 @@ export default function Home() {
       if (!file) { setError('Dosya seçin'); return; }
     setLoading(true); setError(null);
     try {
-      const data = await uploadCSV(file, pmiThreshold);
+      const data = await uploadCSV(file, pmiThreshold, associationMeasure, collocationMode, lemmatize);
       setFullGraph(data.graph);
       setRawDocuments(data.raw_documents || []);
       const tr = data.time_range.filter(t => t !== '').map(Number);
@@ -217,6 +237,12 @@ export default function Home() {
         setMaxCliques={setMaxCliques}
         pmiThreshold={pmiThreshold}
         setPmiThreshold={setPmiThreshold}
+        associationMeasure={associationMeasure}
+        onMeasureChange={handleMeasureChange}
+        collocationMode={collocationMode}
+        setCollocationMode={setCollocationMode}
+        lemmatize={lemmatize}
+        setLemmatize={setLemmatize}
         showAdvanced={showAdvanced}
         setShowAdvanced={setShowAdvanced}
       />
@@ -287,6 +313,7 @@ export default function Home() {
                 onSample={handleSample}
                 rawDocuments={rawDocuments}
                 pmiThreshold={pmiThreshold}
+                associationMeasure={associationMeasure}
               />
             </div>
           )}

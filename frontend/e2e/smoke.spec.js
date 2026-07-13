@@ -38,6 +38,13 @@ test('upload sample data, walk all four views, no console errors', async ({ page
   await page.getByRole('button', { name: 'Ara' }).click();
   await expect(page.getByText(/klik,/)).toBeVisible({ timeout: 15_000 });
 
+  // KWIC/concordance: raw sentence text is threaded through raw_documents
+  // (see corpus_parser.py) purely client-side -- clicking "Bağlamda gör"
+  // must show at least one matching sentence fragment, no extra request.
+  await page.getByRole('button', { name: 'Bağlamda gör' }).first().click();
+  await expect(page.getByText(/^Bağlamda:/)).toBeVisible();
+  await expect(page.getByText(/eşleşme\)/)).toBeVisible();
+
   expect(errors, `console/page errors:\n${errors.join('\n')}`).toEqual([]);
 });
 

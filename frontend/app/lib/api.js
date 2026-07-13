@@ -50,6 +50,7 @@ export function computeTrends(graph, windows = 10, opts = {}) {
     windows,
     raw_documents: opts.rawDocuments || [],
     pmi_threshold: opts.pmiThreshold ?? 0.15,
+    association_measure: opts.associationMeasure || 'npmi',
   });
 }
 
@@ -57,11 +58,20 @@ export function computeCompare(graph1, graph2) {
   return post('/api/compare', { graph1, graph2 });
 }
 
-export function uploadCSV(file, pmiThreshold) {
+export function uploadCSV(file, pmiThreshold, associationMeasure, collocationMode, lemmatize) {
   const fd = new FormData();
   fd.append('file', file);
   if (pmiThreshold !== undefined && pmiThreshold !== null) {
     fd.append('pmi_threshold', String(pmiThreshold));
+  }
+  if (associationMeasure) {
+    fd.append('association_measure', associationMeasure);
+  }
+  if (collocationMode) {
+    fd.append('collocation_mode', collocationMode);
+  }
+  if (lemmatize) {
+    fd.append('lemmatize', 'true');
   }
   return upload('/api/upload', fd);
 }
@@ -73,6 +83,7 @@ export function searchWordCliques(graph, word, windows = 10, opts = {}) {
     windows,
     raw_documents: opts.rawDocuments || [],
     pmi_threshold: opts.pmiThreshold ?? 0.15,
+    association_measure: opts.associationMeasure || 'npmi',
   });
 }
 

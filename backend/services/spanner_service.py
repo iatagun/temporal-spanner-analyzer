@@ -258,8 +258,22 @@ def build_spanner_response(
     else:
         all_verified = all(v for v in verified_results if v is not None)
 
+    # Same per-pair scores the corpus was uploaded with (see
+    # graph_builder.compute_association_measures) -- carried onto the
+    # spanner's own edges so SpannerView can show "NPMI/G^2/Dice/t" for a
+    # kept edge, not just for edges surfaced via /api/word-cliques.
+    scores_by_pair: dict[tuple[str, str], dict[str, float]] = {}
+    for e in req_graph.edges:
+        key = (e.u, e.v) if e.u <= e.v else (e.v, e.u)
+        if e.scores:
+            scores_by_pair[key] = e.scores
+
     spanner_edges_out = [
-        EdgeSchema(u=a, v=b, label=lbl.get((a, b) if a <= b else (b, a), 0.0))
+        EdgeSchema(
+            u=a, v=b,
+            label=lbl.get((a, b) if a <= b else (b, a), 0.0),
+            scores=scores_by_pair.get((a, b) if a <= b else (b, a), {}),
+        )
         for a, b in all_spanner_edges
     ]
 

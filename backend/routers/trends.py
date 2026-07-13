@@ -16,4 +16,5 @@ def get_trends(req: TrendRequest):
         windows=req.windows,
         raw_documents=raw_documents,
         pmi_threshold=req.pmi_threshold,
+        measure=req.association_measure,
     )
