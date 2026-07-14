@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import SupportButton from '../SupportButton';
 
 export default function Nav() {
   return (
@@ -19,7 +18,6 @@ export default function Nav() {
           </span>
         </Link>
         <div className="flex items-center gap-3">
-          <SupportButton />
           <Link href="/app"
             className="px-4 py-1.5 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-sm font-medium rounded-md hover:bg-gray-800 dark:hover:bg-gray-300 transition-colors">
             Aracı Aç

@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import SupportButton from './SupportButton';
 
 export default function Header() {
   return (
@@ -20,7 +19,6 @@ export default function Header() {
             Temporal Spanner Analyzer
           </h1>
         </Link>
-        <SupportButton />
       </div>
       <p className="text-sm text-gray-500 dark:text-gray-400 max-w-2xl leading-relaxed ml-11">
         Derlem dilbiliminde kavramların zamansal evrimini analiz eden bir araç.
